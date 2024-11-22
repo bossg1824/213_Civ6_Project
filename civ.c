@@ -50,7 +50,7 @@
     };
 
     struct Tile_Coord_Node {
-        struct Tile_Cord data;
+        struct Tile_Coord data;
         struct Tile_Coord_Node* next;
     };
 
@@ -71,7 +71,7 @@
         struct District district;
         enum BonusType bonus_type;
         int bonus_amount;
-0       int production_cost;
+        int production_cost;
         int production_spent;
         bool completed;
         int estimated_turns_until_completion; 
