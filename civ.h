@@ -149,7 +149,7 @@
         int player_id;
         char* civ_name;
         struct City_List cities;
-        struct TechTree techtree;
+        struct TechTree* techtree;
         int total_faith;
         int faith_per_turn;
         int science_per_turn;
