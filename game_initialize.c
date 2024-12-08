@@ -7,30 +7,73 @@
 #include <math.h>
 #include "civ.h"
 
+struct TwoDNoise{
+    float data[tile_rows][tile_cols];
+};
+
+struct OffSetList{
+    float data[10];
+};
+
+struct OffSetLists{
+    struct OffSetList x_offsets;
+    struct OffSetList y_offsets;
+};
+
+
 void printmap(struct MapData map){
-    for(int i = 0; i < map.cols; i++)
+    printf("\n\nPrinting tiletype values");
+    for(int i = 0; i < map.rows; i++)
     {
         printf("\n");
-        for(int j = 0; j < map.rows; j++)
+        for(int j = 0; j < map.cols; j++)
         {
-            printf("%d",map.tiles[i][j].food);
+            printf("%d  ",map.tiles[i][j].tiletype);
         }
     }
+    printf("\n\nPrinting food values");
+    for(int i = 0; i < map.rows; i++)
+    {
+        printf("\n");
+        for(int j = 0; j < map.cols; j++)
+        {
+            printf("%d  ",map.tiles[i][j].food);
+        }
+    }
+    printf("\n\nPrinting production values");
+    for(int i = 0; i < map.rows; i++)
+    {
+        printf("\n");
+        for(int j = 0; j < map.cols; j++)
+        {
+            printf("%d  ",map.tiles[i][j].production);
+        }
+    }
+    printf("\n\nPrinting resource values");
+    for(int i = 0; i < map.rows; i++)
+    {
+        printf("\n");
+        for(int j = 0; j < map.cols; j++)
+        {
+            printf("%d  ",map.tiles[i][j].resource);
+        }
+    }
+    printf("\n");
 }
 
 //radius should be an int between 1 and 200
 //dist dependancy should be between 0 and 100
 //denormalizer should be between 1 and 20
-void perlin_noise_one_octave(int cols, int rows, int radius_to_consider, float dist_dependancy_constant, float denormalizer)
+struct TwoDNoise perlin_noise_one_octave(int rows, int cols, int radius_to_consider, float dist_dependancy_constant, float denormalizer)
 {   
     srand(time(NULL));
     int adjust_cols = cols + (radius_to_consider * 2) - 1;
     int adjust_rows = rows + (radius_to_consider * 2) - 1;
-    float matrix [adjust_cols][adjust_rows];
+    float matrix [adjust_rows][adjust_cols];
     //create random noise
-    for (int i = 0; i < adjust_cols; i++)
+    for (int i = 0; i < adjust_rows; i++)
     {
-        for (int j = 0; j < adjust_rows; j++)
+        for (int j = 0; j < adjust_cols; j++)
         {
             matrix[i][j] = (float)rand() / (float)(RAND_MAX);
             //printf("%f ",matrix[i][j]);
@@ -38,10 +81,10 @@ void perlin_noise_one_octave(int cols, int rows, int radius_to_consider, float d
         //printf("\n");
     }
 
-    float perlin_matrix [cols][rows];
-    for (int i = 0; i < cols; i++)
+    float perlin_matrix [rows][cols];
+    for (int i = 0; i < rows; i++)
     {
-        for (int j = 0; j < rows; j++)
+        for (int j = 0; j < cols; j++)
         {   
             float rand_x = (radius_to_consider - 1) + i + ((float)rand() / (float)(RAND_MAX));
             float rand_y = (radius_to_consider - 1) + j + ((float)rand() / (float)(RAND_MAX));
@@ -83,23 +126,27 @@ void perlin_noise_one_octave(int cols, int rows, int radius_to_consider, float d
             {
                 updated_weighted_avg =  -0.5 * (1 - pow(1 - (2 * fabs(weighted_average - 0.5)),denormalizer)) + 0.5;
             }
-            
+            //printf("   %d    ",i);
             perlin_matrix[i][j] = updated_weighted_avg;         
             printf("%.2f ",updated_weighted_avg);
+            
         }
         printf("\n");
     }
     //printf("%f ", avg_diff_run);
+    struct TwoDNoise noise_matrix;
+    memcpy(noise_matrix.data,perlin_matrix,sizeof(perlin_matrix));
+    return noise_matrix;
 }
 
 //using desmos and trial and error
 //frequency is on 0 to 1 exclusive
-void procedural_noise(int cols, int rows, float frequency)
+struct TwoDNoise procedural_noise(int rows, int cols, float frequency)
 {
     float distance_constant = 0.8;
     int radius = (int)round(pow(2,4 * (1 - frequency)));
     int decenterize_constant = (int)round(pow(2,2.34 * (1 - frequency)));
-    perlin_noise_one_octave(rows,cols,radius,distance_constant,decenterize_constant);
+    return perlin_noise_one_octave(rows,cols,radius,distance_constant,decenterize_constant);
 }
 
 
@@ -109,8 +156,8 @@ struct MapData create_testmap1()
     mymap.cols = tile_cols;
     mymap.rows = tile_rows;
 
-    for(int i = 0; i < mymap.cols; i++){
-        for(int j = 0; j < mymap.rows; j++){
+    for(int i = 0; i < mymap.rows; i++){
+        for(int j = 0; j < mymap.cols; j++){
             struct Tile_Coord coord;
             coord.x = i;
             coord.y = j;
@@ -129,21 +176,379 @@ struct MapData create_testmap1()
             tile.food = food;
             tile.buildable_structure = buildable;
             mymap.tiles[i][j] = tile;
-            
+            //printf("%d%d\n",i,j);
         }
     }
     return mymap;
 }
 
 
-int main() {
-    
-    //struct MapData map_a = create_testmap1();
-    //printmap(map_a);
+struct OffSetLists generate_offsets(int starting_direction, int tile_row, int tile_col)
+{   
 
-    procedural_noise(30,60,0.4);
+    int xoff;
+    int yoff;
+    int direction = starting_direction;
+    if (direction == 0)
+    {
+        xoff = 0;
+        yoff = 1;
+    }
+    else if (direction == 1)
+    {
+        xoff = 1;
+        yoff = 0;
+    }
+    else if (direction == 2)
+    {
+        xoff = 0;
+        yoff = -1;
+    }
+    else if (direction == 3)
+    {
+        xoff = -1;
+        yoff = 0;
+    }
+    struct OffSetLists offs;
+    offs.x_offsets.data[0] = xoff;
+    offs.y_offsets.data[0] = yoff;
 
+    int main_xoff = xoff;
+    int main_yoff = yoff;
+    direction = starting_direction;
 
-    printf("Here\n"); // Added newline for output formatting
-    return 0;
+    for(int i = 1; i < 10; i++)
+    {
+        if(direction == starting_direction)
+        {
+            int min = 0;
+            int max = 15;
+            int rand_val = rand() % (max - min + 1) + min;
+            if(rand_val == 0)
+            {
+                direction = (direction - 1) % 4;
+            }
+            else if(rand_val == 15)
+            {
+                direction = (direction + 1) % 4;
+            }
+        }
+        else if (direction == ((starting_direction - 1) % 4))
+        {
+            int min = 0;
+            int max = 30;
+            int rand_val = rand() % (max - min + 1) + min;
+            if(rand_val < 30)
+            {
+                direction = (direction + 1) % 4;
+            }
+        }
+        else if (direction == ((starting_direction + 1) % 4))
+        {
+            int min = 0;
+            int max = 30;
+            int rand_val = rand() % (max - min + 1) + min;
+            if(rand_val < 30)
+            {
+                direction = (direction - 1) % 4;
+            }
+        }
+        if (direction == 0)
+    {
+        xoff = 0;
+        yoff = 1;
+    }
+    else if (direction == 1)
+    {
+        xoff = 1;
+        yoff = 0;
+    }
+    else if (direction == 2)
+    {
+        xoff = 0;
+        yoff = -1;
+    }
+    else if (direction == 3)
+    {
+        xoff = -1;
+        yoff = 0;
+    }
+    main_xoff = main_xoff + xoff;
+    main_yoff = main_yoff + yoff;
+    offs.x_offsets.data[i] = main_xoff;
+    offs.y_offsets.data[i] = main_yoff;
+    }
+    //printf("GENERATED OFFSETS");
+    return offs;
 }
+
+
+
+
+
+struct MapData map_initialize_default()
+{
+    unsigned int seed = time(0);
+    struct MapData mymap;
+    mymap.cols = tile_cols;
+    mymap.rows = tile_rows;
+
+    struct TwoDNoise noise_obj = procedural_noise(tile_rows,tile_cols,0.4);
+    float noise_matrix [tile_rows][tile_cols];
+    memcpy(noise_matrix,noise_obj.data,sizeof(noise_matrix));
+
+    for(int i = 0; i < mymap.rows; i++){
+        for(int j = 0; j < mymap.cols; j++){
+            seed++;
+            struct Tile_Coord coord;
+            coord.x = i;
+            coord.y = j;
+            float random_val = noise_matrix[i][j];
+
+            //setting the tiletypes based on the noise
+            enum TileType tile_type;
+            if(random_val <= 0.34)//0 to 0.34 inclusive
+            {
+                tile_type = lake;
+            }
+            else if(random_val <= 0.42)//0.34 exclusive to 0.42 inclusive
+            {
+                tile_type = mountain;
+            }
+            else if(random_val <= 0.57)//0.42 exclusive to 0.57 inclusive
+            {
+                tile_type = flat;
+            }
+            else //0.57 exclusive
+            {
+                tile_type = hill;
+            }
+            
+            //itializing resources
+            enum ResourceType resource;
+            //1 divided by max is probabability
+            int approx_num_resources = 40;
+            int max = (float)(tile_rows * tile_cols)/(float)(approx_num_resources * 6);
+            if (max < 1)
+            {
+                max = 1;
+            }
+            int min = 1;
+            int rand_value = rand_r(&seed) % (max - min + 1) + min;
+            //We hit a rare instance and we are on an accessible tile
+            if((rand_value == 1) & (tile_type == 5))
+            {
+                //set to a resource of the 4 valid ones
+                int resource_count = 4;
+                resource = (rand_r(&seed) % (resource_count - 1 + 1) + min);  
+            }
+            else
+            {
+                resource = 0;
+            }
+
+            //initialize production values
+            int production;
+            if((tile_type == ocean)|| (tile_type == mountain) || (tile_type == lake))
+            {
+                production = 0;
+            }
+            else if(resource > 0)
+            {
+                production = 5;
+            }
+            else if(tile_type == flat)
+            {
+                production = 1;
+            }
+            else if(tile_type == hill)
+            {
+                production = (6.974 * random_val) - 0.975;
+            }
+
+            //itializing food
+            int food;
+            if(tile_type == mountain)
+            {
+                food = 0;
+            }
+            else if((tile_type == ocean) || (tile_type == lake) || (tile_type == hill))
+            {
+                food = 1;
+            }
+            else if(tile_type == flat)
+            {
+                food = (13.326* random_val) - 3.597;
+            } 
+
+            
+            int civ_id_controlling = 0;
+            struct Buildable_Structure *buildable = NULL;
+            struct TileData tile;
+            tile.coordinate = coord;
+            tile.tiletype = tile_type;
+            tile.resource = resource;
+            tile.city_id_controlling = civ_id_controlling;
+            tile.production = production;
+            tile.food = food;
+            tile.buildable_structure = buildable;
+            mymap.tiles[i][j] = tile;
+        }
+    }
+
+    //generate rivers
+
+    int river_block_matrix[mymap.rows][mymap.cols];
+    for(int i = 0; i < mymap.rows; i++){
+        for(int j = 0; j < mymap.cols; j++){
+            river_block_matrix[i][j] = 0;
+        }
+    }
+
+    int river_length = 10;
+    for(int i = 0; i < mymap.rows; i++){
+        for(int j = 0; j < mymap.cols; j++){
+            if((mymap.tiles[i][j].tiletype == mountain) | (mymap.tiles[i][j].tiletype == ocean) | (mymap.tiles[i][j].tiletype == lake))
+            {
+                //check if we are not blocked
+                if (river_block_matrix[i][j] == 0)
+                {
+                    //start generating path
+
+                    int x_offsets [river_length];
+                    int y_offsets [river_length];
+
+                    //try to generate river
+                    int min = 0;
+                    int max = 3;
+                    int start_direction = rand() % (max - min + 1) + min;
+                    struct OffSetLists offsets = generate_offsets(start_direction,i,j);
+                    //if this value is less than the map size there will be problems
+                    int safe_zone_radius = 35;
+                    int river_nonproximity_radius = 3;
+                    //check if out of bounds
+                    bool valid_river = true;
+                    for (int x = 0; x < river_length; x++)
+                    {
+                        int x_off = offsets.x_offsets.data[x];
+                        int y_off = offsets.y_offsets.data[x];
+                        int new_coord_x = i + x_off;
+                        int new_coord_y = j + y_off;
+                        if((new_coord_x < 0) | (new_coord_x >= tile_rows))
+                        {
+                            valid_river = false;
+                            break;
+                        }
+                        if((new_coord_y < 0) | (new_coord_y >= tile_cols))
+                        {
+                            valid_river = false;
+                            break;
+                        }
+
+                        for(int m = -river_nonproximity_radius; m < river_nonproximity_radius; m++)
+                        {
+                            int new_coord_x_radius = new_coord_x + m;
+                            if((new_coord_x_radius  < 0) | (new_coord_x_radius  >= tile_rows))
+                            {
+                                continue;
+                            }
+
+                            
+                            for(int n = -river_nonproximity_radius; n < river_nonproximity_radius; n++)
+                            {
+                                int new_coord_y_radius = new_coord_y + n;
+                                if((new_coord_y_radius < 0) | (new_coord_y_radius > tile_cols))
+                                {
+                                    continue;
+                                }
+                                enum TileType current_tile = mymap.tiles[new_coord_x_radius][new_coord_y_radius].tiletype;
+                                if(current_tile == river)
+                                {
+                                    valid_river = false;
+                                    break;
+                                }
+                            }
+                        }
+
+
+
+
+
+
+                    }
+                    if(valid_river)
+                    {
+                        for (int x = 0; x < river_length; x++)
+                        {
+                            int x_off = offsets.x_offsets.data[x];
+                            int y_off = offsets.y_offsets.data[x];
+                            int new_coord_x = i + x_off;
+                            int new_coord_y = j + y_off;
+                            //make river tile
+                            mymap.tiles[new_coord_x][new_coord_y].tiletype = river;
+
+                            //set non river zone
+                            for(int m = -safe_zone_radius; m < safe_zone_radius; m++)
+                            {
+                                int new_coord_x_radius = new_coord_x + m;
+                                if((new_coord_x_radius < 0) | (new_coord_x_radius >= tile_rows))
+                                {
+                                    continue;
+                                }
+
+                            
+                                for(int n = -safe_zone_radius; n < safe_zone_radius; n++)
+                                {
+                                    int new_coord_y_radius = new_coord_y + n;
+                                    if((new_coord_y < 0) | (new_coord_y >= tile_cols))
+                                    {
+                                        continue;
+                                    }
+                                    river_block_matrix[new_coord_x][new_coord_y] = 1;
+                                }
+                            }
+                        }
+
+                        
+                    }
+
+
+                    
+
+                    //printf("%d ",rand_value);
+                }
+            }
+        }
+    }
+
+    for(int i = 0; i < mymap.rows; i++){
+        for(int j = 0; j < mymap.cols; j++){
+            if(mymap.tiles[i][j].tiletype == river)
+            {
+                mymap.tiles[i][j].food = 2;
+                if(mymap.tiles[i][j].resource == 0)
+                {
+                    mymap.tiles[i][j].production= 1;
+                }
+            }
+
+
+        }
+    }
+
+
+
+
+
+
+
+    return mymap;
+
+}
+
+//int main() {
+    
+    //struct MapData map_a = map_initialize_default();
+    //printmap(map_a);
+    //return 0;
+//}
