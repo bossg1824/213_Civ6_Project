@@ -12,7 +12,7 @@ struct TwoDNoise{
 };
 
 struct OffSetList{
-    float data[10];
+    float data[11];
 };
 
 struct OffSetLists{
@@ -185,29 +185,66 @@ struct MapData create_testmap1()
 
 struct OffSetLists generate_offsets(int starting_direction, int tile_row, int tile_col)
 {   
-
+    int rand_val;
     int xoff;
     int yoff;
     int direction = starting_direction;
-    if (direction == 0)
+    int quadrant = direction/4;
+    int angle_change = direction%4;
+    if (quadrant == 0)
     {
-        xoff = 0;
-        yoff = 1;
+        rand_val = rand() % (3 - 0 + 1) + 0;
+        if(rand_val >= angle_change)
+        {
+            xoff = 0;
+            yoff = 1;
+        }
+        else
+        {
+            xoff = 1;
+            yoff = 0;
+        }
     }
-    else if (direction == 1)
+    else if (quadrant == 1)
     {
-        xoff = 1;
-        yoff = 0;
+        rand_val = rand() % (3 - 0 + 1) + 0;
+        if(rand_val >= angle_change)
+        {
+            xoff = 1;
+            yoff = 0;
+        }
+        else
+        {
+            xoff = 0;
+            yoff = -1;
+        }
     }
-    else if (direction == 2)
+    else if (quadrant == 2)
     {
-        xoff = 0;
-        yoff = -1;
+        rand_val = rand() % (3 - 0 + 1) + 0;
+        if(rand_val >= angle_change)
+        {
+            xoff = 0;
+            yoff = -1;
+        }
+        else
+        {
+            xoff = -1;
+            yoff = 0;
+        }
     }
-    else if (direction == 3)
-    {
-        xoff = -1;
-        yoff = 0;
+    else if (quadrant == 3)
+    {   rand_val = rand() % (3 - 0 + 1) + 0;
+        if(rand_val >= angle_change)
+        {
+            xoff = -1;
+            yoff = 0;
+        }
+        else
+        {
+            xoff = 0;
+            yoff = -1;
+        }
     }
     struct OffSetLists offs;
     offs.x_offsets.data[0] = xoff;
@@ -217,66 +254,69 @@ struct OffSetLists generate_offsets(int starting_direction, int tile_row, int ti
     int main_yoff = yoff;
     direction = starting_direction;
 
-    for(int i = 1; i < 10; i++)
+    for(int i = 1; i < 11; i++)
     {
-        if(direction == starting_direction)
+        quadrant = direction/4;
+        angle_change = direction%4;
+        if (quadrant == 0)
         {
-            int min = 0;
-            int max = 15;
-            int rand_val = rand() % (max - min + 1) + min;
-            if(rand_val == 0)
+            rand_val = rand() % (3 - 0 + 1) + 0;
+            if(rand_val >= angle_change)
             {
-                direction = (direction - 1) % 4;
+                xoff = 0;
+                yoff = 1;
             }
-            else if(rand_val == 15)
+            else
             {
-                direction = (direction + 1) % 4;
+                xoff = 1;
+                yoff = 0;
             }
         }
-        else if (direction == ((starting_direction - 1) % 4))
+        else if (quadrant == 1)
         {
-            int min = 0;
-            int max = 30;
-            int rand_val = rand() % (max - min + 1) + min;
-            if(rand_val < 30)
+            rand_val = rand() % (3 - 0 + 1) + 0;
+            if(rand_val >= angle_change)
             {
-                direction = (direction + 1) % 4;
+                xoff = 1;
+                yoff = 0;
+            }
+            else
+            {
+                xoff = 0;
+                yoff = -1;
             }
         }
-        else if (direction == ((starting_direction + 1) % 4))
+        else if (quadrant == 2)
         {
-            int min = 0;
-            int max = 30;
-            int rand_val = rand() % (max - min + 1) + min;
-            if(rand_val < 30)
+            rand_val = rand() % (3 - 0 + 1) + 0;
+            if(rand_val >= angle_change)
             {
-                direction = (direction - 1) % 4;
+                xoff = 0;
+                yoff = -1;
+            }
+            else
+            {
+                xoff = -1;
+                yoff = 0;
             }
         }
-        if (direction == 0)
-    {
-        xoff = 0;
-        yoff = 1;
-    }
-    else if (direction == 1)
-    {
-        xoff = 1;
-        yoff = 0;
-    }
-    else if (direction == 2)
-    {
-        xoff = 0;
-        yoff = -1;
-    }
-    else if (direction == 3)
-    {
-        xoff = -1;
-        yoff = 0;
-    }
-    main_xoff = main_xoff + xoff;
-    main_yoff = main_yoff + yoff;
-    offs.x_offsets.data[i] = main_xoff;
-    offs.y_offsets.data[i] = main_yoff;
+        else if (quadrant == 3)
+        {   rand_val = rand() % (3 - 0 + 1) + 0;
+            if(rand_val >= angle_change)
+            {
+                xoff = -1;
+                yoff = 0;
+            }
+            else
+            {
+                xoff = 0;
+                yoff = -1;
+            }
+        }
+        main_xoff = main_xoff + xoff;
+        main_yoff = main_yoff + yoff;
+        offs.x_offsets.data[i] = main_xoff;
+        offs.y_offsets.data[i] = main_yoff;
     }
     //printf("GENERATED OFFSETS");
     return offs;
@@ -315,7 +355,7 @@ struct MapData map_initialize_default()
             {
                 tile_type = mountain;
             }
-            else if(random_val <= 0.57)//0.42 exclusive to 0.57 inclusive
+            else if(random_val <= 0.61)//0.42 exclusive to 0.57 inclusive
             {
                 tile_type = flat;
             }
@@ -328,7 +368,7 @@ struct MapData map_initialize_default()
             enum ResourceType resource;
             //1 divided by max is probabability
             int approx_num_resources = 40;
-            int max = (float)(tile_rows * tile_cols)/(float)(approx_num_resources * 6);
+            int max = (float)(tile_rows * tile_cols)/(float)(approx_num_resources * 8);
             if (max < 1)
             {
                 max = 1;
@@ -363,7 +403,7 @@ struct MapData map_initialize_default()
             }
             else if(tile_type == hill)
             {
-                production = (6.974 * random_val) - 0.975;
+                production = (7.692 * random_val) - 1.692;
             }
 
             //itializing food
@@ -378,7 +418,7 @@ struct MapData map_initialize_default()
             }
             else if(tile_type == flat)
             {
-                food = (13.326* random_val) - 3.597;
+                food = (10.525* random_val) - 2.42;
             } 
 
             
@@ -396,6 +436,23 @@ struct MapData map_initialize_default()
         }
     }
 
+    //generate ocean
+    for(int y = 0; y < mymap.rows; y++){
+        for(int x = 0; x < mymap.cols; x++){
+            float inverse_ocean_size_multiplier = 0.9;
+            float outside_ellipse = pow((x-(tile_cols/2.0 - 0.5)),2)/(pow((tile_cols/2.0 - 0.5),2) * inverse_ocean_size_multiplier) +
+            pow((y-(tile_rows/2.0 - 0.5)),2)/(pow((tile_rows/2.0 - 0.5),2) * inverse_ocean_size_multiplier);
+            if (outside_ellipse > 1)
+            {
+                mymap.tiles[y][x].tiletype = ocean;
+                mymap.tiles[y][x].food = 1;
+                mymap.tiles[y][x].production = 0;
+            }
+        }
+    }  
+
+
+
     //generate rivers
 
     int river_block_matrix[mymap.rows][mymap.cols];
@@ -405,7 +462,7 @@ struct MapData map_initialize_default()
         }
     }
 
-    int river_length = 10;
+    int river_length = 11;
     for(int i = 0; i < mymap.rows; i++){
         for(int j = 0; j < mymap.cols; j++){
             if((mymap.tiles[i][j].tiletype == mountain) | (mymap.tiles[i][j].tiletype == ocean) | (mymap.tiles[i][j].tiletype == lake))
@@ -420,11 +477,10 @@ struct MapData map_initialize_default()
 
                     //try to generate river
                     int min = 0;
-                    int max = 3;
+                    int max = 15;
                     int start_direction = rand() % (max - min + 1) + min;
                     struct OffSetLists offsets = generate_offsets(start_direction,i,j);
-                    //if this value is less than the map size there will be problems
-                    int safe_zone_radius = 35;
+                    int safe_zone_radius = 8;
                     int river_nonproximity_radius = 3;
                     //check if out of bounds
                     bool valid_river = true;
@@ -434,6 +490,9 @@ struct MapData map_initialize_default()
                         int y_off = offsets.y_offsets.data[x];
                         int new_coord_x = i + x_off;
                         int new_coord_y = j + y_off;
+                        
+
+
                         if((new_coord_x < 0) | (new_coord_x >= tile_rows))
                         {
                             valid_river = false;
@@ -444,6 +503,14 @@ struct MapData map_initialize_default()
                             valid_river = false;
                             break;
                         }
+                        enum TileType current_tiletype = mymap.tiles[new_coord_x][new_coord_y].tiletype;
+                        if((x > 0) & ((current_tiletype == mountain)|(current_tiletype == ocean)|(current_tiletype == river)|(current_tiletype == lake)))
+                        {
+                            valid_river = false;
+                            break;
+                        }
+
+
 
                         for(int m = -river_nonproximity_radius; m < river_nonproximity_radius; m++)
                         {
@@ -480,10 +547,17 @@ struct MapData map_initialize_default()
                     {
                         for (int x = 0; x < river_length; x++)
                         {
+                            
                             int x_off = offsets.x_offsets.data[x];
                             int y_off = offsets.y_offsets.data[x];
                             int new_coord_x = i + x_off;
                             int new_coord_y = j + y_off;
+
+                            if((mymap.tiles[new_coord_x][new_coord_y].tiletype == ocean) & (x == 0))
+                            {
+                                continue;
+                            }
+
                             //make river tile
                             mymap.tiles[new_coord_x][new_coord_y].tiletype = river;
 
@@ -500,11 +574,12 @@ struct MapData map_initialize_default()
                                 for(int n = -safe_zone_radius; n < safe_zone_radius; n++)
                                 {
                                     int new_coord_y_radius = new_coord_y + n;
-                                    if((new_coord_y < 0) | (new_coord_y >= tile_cols))
+                                    if((new_coord_y_radius < 0) | (new_coord_y_radius >= tile_cols))
                                     {
                                         continue;
                                     }
-                                    river_block_matrix[new_coord_x][new_coord_y] = 1;
+                                    river_block_matrix[new_coord_x_radius][new_coord_y_radius] = 1;
+                                    //printf("%d %d, ",new_coord_x_radius,new_coord_y_radius);
                                 }
                             }
                         }
@@ -536,6 +611,7 @@ struct MapData map_initialize_default()
         }
     }
 
+      
 
 
 
