@@ -1,3 +1,6 @@
+#ifndef _CIVILIZATION_STRUCTS_
+#define _CIVILIZATION_STRUCTS_
+
 #include <stdio.h>    
 #include <stdlib.h>   
 #include <stdbool.h>   
@@ -7,7 +10,7 @@
 #define tile_cols 100
 #define tile_rows 60
 #define sub_tech_tree_size 5
-
+#define default_int -1
 
 //Enums needed for Map Data
 enum BonusType{
@@ -93,7 +96,7 @@ struct TileData{
     struct Tile_Coord coordinate;
     enum TileType tiletype;
     enum ResourceType resource;
-    int civ_id_controlling;
+    int civ_id_controlling;// -1 if no civ controlling
     int city_id_controlling;
     int production;
     int food;
@@ -156,7 +159,7 @@ struct PlayerData{
     int science_per_turn;
     int production_per_turn;
 };
-
+ 
 struct PlayerData_Node {
     struct PlayerData data;
     struct PlayerData_Node* next;
@@ -174,3 +177,4 @@ int player_turn;
 struct MapData mymap;    
 struct PlayerData_List players;
 }; 
+#endif
