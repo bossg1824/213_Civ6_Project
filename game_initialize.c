@@ -66,7 +66,7 @@ void printmap(struct MapData map){
 //denormalizer should be between 1 and 20
 struct TwoDNoise perlin_noise_one_octave(int rows, int cols, int radius_to_consider, float dist_dependancy_constant, float denormalizer)
 {   
-    srand(time(NULL));
+    srand(map_seed);
     int adjust_cols = cols + (radius_to_consider * 2) - 1;
     int adjust_rows = rows + (radius_to_consider * 2) - 1;
     float matrix [adjust_rows][adjust_cols];
@@ -128,10 +128,10 @@ struct TwoDNoise perlin_noise_one_octave(int rows, int cols, int radius_to_consi
             }
             //printf("   %d    ",i);
             perlin_matrix[i][j] = updated_weighted_avg;         
-            printf("%.2f ",updated_weighted_avg);
+            //printf("%.2f ",updated_weighted_avg);
             
         }
-        printf("\n");
+        //printf("\n");
     }
     //printf("%f ", avg_diff_run);
     struct TwoDNoise noise_matrix;
@@ -163,7 +163,7 @@ struct MapData create_testmap1()
             coord.y = j;
             enum TileType tile_type = mountain;
             enum ResourceType resource = none;
-            int civ_id_controlling = 0;
+            int civ_id_controlling = default_int;
             int production = 1;
             int food = 2;
             struct Buildable_Structure *buildable = NULL;
@@ -182,6 +182,25 @@ struct MapData create_testmap1()
     return mymap;
 }
 
+void rotate_90(int matrix[tile_rows][tile_cols]) {
+    
+    //Temp matrix
+    int rotated[tile_rows][tile_cols];
+    
+    //90 deg clock rotation
+    for (int i = 0; i < tile_rows; i++) {
+        for (int j = 0; j < tile_cols; j++) {
+            rotated[j][tile_cols - 1 - i] = matrix[i][j];
+        }
+    }
+
+    //copy temp into original
+    for (int i = 0; i < tile_rows; i++) {
+        for (int j = 0; j < tile_cols; j++) {
+            matrix[i][j] = rotated[i][j];
+        }
+    }
+}
 
 struct OffSetLists generate_offsets(int starting_direction, int tile_row, int tile_col)
 {   
@@ -328,7 +347,7 @@ struct OffSetLists generate_offsets(int starting_direction, int tile_row, int ti
 
 struct MapData map_initialize_default()
 {
-    unsigned int seed = time(0);
+    unsigned int seed = map_seed;
     struct MapData mymap;
     mymap.cols = tile_cols;
     mymap.rows = tile_rows;
@@ -422,13 +441,13 @@ struct MapData map_initialize_default()
             } 
 
             
-            int civ_id_controlling = 0;
+            int civ_id_controlling = default_int;
             struct Buildable_Structure *buildable = NULL;
             struct TileData tile;
             tile.coordinate = coord;
             tile.tiletype = tile_type;
             tile.resource = resource;
-            tile.city_id_controlling = civ_id_controlling;
+            tile.city_id_controlling = default_int;
             tile.production = production;
             tile.food = food;
             tile.buildable_structure = buildable;
@@ -611,16 +630,137 @@ struct MapData map_initialize_default()
         }
     }
 
-      
+    //symmetry across y-axis if two players
+    if(num_players == 2)
+    {
+        for(int i = 0; i < mymap.rows; i++)
+        {
+            for(int j = 0; j < mymap.cols/2; j++)
+            {
+                int mirror_j = mymap.cols/2 - j - 1;
+                mymap.tiles[i][mirror_j + (mymap.cols/2)] = mymap.tiles[i][j];
+            }
+        }
+    }
+    //balancing map if 4 players and square map region: rotation 4 ways
+    else if((num_players == 4) & (tile_cols == tile_rows))
+    {
+            int half_size = tile_rows / 2;  // Size of the region to rotate
 
+        //Temp rotation matrix
+        struct TileData rotation_0[tile_rows][tile_rows], rotation_90[tile_rows][tile_rows];
+        struct TileData rotation_180[tile_rows][tile_rows], rotation_270[tile_rows][tile_cols];
 
+        //Extract top left to rotate
+        for (int i = 0; i < half_size; i++) {
+            for (int j = 0; j < half_size; j++) {
+                rotation_0[i][j] = mymap.tiles[i][j];
+            }
+        }
 
+        //generate all rotated regions
+        for (int i = 0; i < half_size; i++) {
+            for (int j = 0; j < half_size; j++) {
+                rotation_90[j][half_size - 1 - i] = rotation_0[i][j];//90
+                rotation_180[half_size - 1 - i][half_size - 1 - j] = rotation_0[i][j];//180
+                rotation_270[half_size - 1 - j][i] = rotation_0[i][j];//270
+            }
+        }
+        //note top left is unchanged since its what we used to generate the other regions
+        //top right region
+        for (int i = 0; i < half_size; i++) {
+            for (int j = half_size; j <tile_rows; j++) {
+                mymap.tiles[i][j] = rotation_90[i][j - half_size];
+            }
+        }
 
+        //bottom left region
+        for (int i = half_size; i <tile_rows; i++) {
+            for (int j = 0; j < half_size; j++) {
+                mymap.tiles[i][j] = rotation_270[i - half_size][j];
+            }
+        }
 
+        //bottom right region
+        for (int i = half_size; i <tile_rows; i++) {
+            for (int j = half_size; j <tile_rows; j++) {
+                mymap.tiles[i][j] = rotation_180[i - half_size][j - half_size];
+            }
+        }
+    }
 
     return mymap;
-
 }
+
+struct MapData map_initialize_current()
+{   
+    struct MapData mymap = map_initialize_default();
+    //check to see if the random generation caused a surface with too many mountains or hills
+    //otherwise generate map again
+    float mountain_ratio = 0;
+    float hill_ratio = 0;
+
+
+
+
+
+    //compute sums
+    for (int i = 0; i <tile_rows; i++) {
+        for (int j = 0; j < tile_cols; j++) {
+            enum TileType tile = mymap.tiles[i][j].tiletype;
+            if(tile == mountain)
+            {
+                mountain_ratio++;
+            }
+            else if(tile == hill)
+            {
+                hill_ratio++;
+            }
+        }
+    }
+    //get ration from sums
+    mountain_ratio/= (tile_cols * tile_rows);
+    hill_ratio/= (tile_cols * tile_rows);
+
+    printf("%f %f", mountain_ratio, hill_ratio);
+
+    while(mountain_ratio > 0.1)
+    {   
+        struct MapData mymap = map_initialize_default();
+        //check to see if the random generation caused a surface with too many mountains or hills
+        //otherwise generate map again
+
+        mountain_ratio = 0;
+
+
+
+        //compute sums
+        for (int i = 0; i <tile_rows; i++) {
+            for (int j = 0; j < tile_cols; j++) {
+                enum TileType tile = mymap.tiles[i][j].tiletype;
+                if(tile == mountain)
+                {
+                    mountain_ratio++;
+                }
+                else if(tile == hill)
+                {
+                    hill_ratio++;
+                }
+            }
+        }
+        //get ration from sums
+        mountain_ratio/= (tile_cols * tile_rows);
+        hill_ratio/= (tile_cols * tile_rows);
+
+        printf("MOUNTAIN RATIO %f", mountain_ratio);
+    }
+    printf("DONE");
+    return mymap;
+}
+
+
+
+
 
 //int main() {
     

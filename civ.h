@@ -6,10 +6,11 @@
 #include <stdbool.h>   
 #include <sys/time.h> 
 #include <time.h>     
-
-#define tile_cols 100
+#define tile_cols 60
 #define tile_rows 60
 #define sub_tech_tree_size 5
+#define num_players 4
+#define map_seed 147
 #define default_int -1
 
 //Enums needed for Map Data
@@ -106,6 +107,7 @@ struct TileData{
 struct MapData {
     int cols;
     int rows;
+    //bool occupied_tiles[tile_rows][tile_cols];
     struct TileData tiles[tile_rows][tile_cols];
 };
 
@@ -170,7 +172,7 @@ struct PlayerData_List{//Linked list of all players
     int length;
 };
 
-struct GameState {   
+struct GameState {
 int turn_count;
 int turn_limit;
 int player_turn;

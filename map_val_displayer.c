@@ -11,22 +11,10 @@ void ncursepoint(int row, int col, char* str, int color_pair)
     attroff(COLOR_PAIR(color_pair));
 }
 
-#include <ncurses.h>
-int main() {
-
-    struct MapData map_a = map_initialize_default();
-
-    initscr();               // Initialize ncurses
-    start_color();           // Initialize color functionality
-    raw();                   // Disable line buffering
-    noecho();                // Don't echo user input
-    curs_set(0);             // Hide the cursor
-
-    
 
 
-
-
+void display_terrain_color(int display_num, struct MapData map)
+{
     //Define color pairs
     init_color(8, 0, 0, 500);
     init_color(9, 0, 0, 1000);
@@ -43,38 +31,68 @@ int main() {
     init_pair(6, 12, COLOR_BLACK);//hill
     init_pair(7, 13, COLOR_BLACK);//mountain
 
-
-    char user_info[] = "Displaying Map TileTypes\n";
+    char user_info[100] = "/n";
+    if(display_num == 1)
+    {
+        strcpy(user_info, "Displaying Map TileTypes\n");
+    }
+    else if(display_num == 2)
+    {
+        strcpy(user_info, "Displaying Map Food\n");
+    }
+    else if(display_num == 3)
+    {
+        strcpy(user_info, "Displaying Map Production\n");
+    }
+    else if(display_num == 4)
+    {
+        strcpy(user_info, "Displaying Map Resource\n");
+    }
     ncursepoint(0,0,user_info,1);
-    for(int row = 0; row < map_a.rows; row++)
+    for(int row = 0; row < map.rows; row++)
     {
-        for(int col = 0; col < map_a.cols; col++)
+        for(int col = 0; col < map.cols; col++)
         {
             char display_val[10];
             //change what to display
-            sprintf(display_val, "%d", map_a.tiles[row][col].tiletype);
+            if(display_num == 1)
+            {
+                sprintf(display_val, "%d", map.tiles[row][col].tiletype);
+            }
+            else if(display_num == 2)
+            {
+                sprintf(display_val, "%d", map.tiles[row][col].food);
+            }
+            else if(display_num == 3)
+            {
+                sprintf(display_val, "%d", map.tiles[row][col].production);
+            }
+            else if(display_num == 4)
+            {
+                sprintf(display_val, "%d", map.tiles[row][col].resource);
+            }
             int color_pair_val;
-            if(map_a.tiles[row][col].tiletype == ocean)
+            if(map.tiles[row][col].tiletype == ocean)
             {
                 color_pair_val = 2;
             }
-            else if(map_a.tiles[row][col].tiletype == lake)
+            else if(map.tiles[row][col].tiletype == lake)
             {
                 color_pair_val = 3;
             }
-            else if(map_a.tiles[row][col].tiletype == river)
+            else if(map.tiles[row][col].tiletype == river)
             {
                 color_pair_val = 4;
             }
-            else if(map_a.tiles[row][col].tiletype == flat)
+            else if(map.tiles[row][col].tiletype == flat)
             {
                 color_pair_val = 5;
             }
-            else if(map_a.tiles[row][col].tiletype == hill)
+            else if(map.tiles[row][col].tiletype == hill)
             {
                 color_pair_val = 6;
             }
-            else if(map_a.tiles[row][col].tiletype == mountain)
+            else if(map.tiles[row][col].tiletype == mountain)
             {
                 color_pair_val = 7;
             }
@@ -86,140 +104,25 @@ int main() {
     getch();                  
     clear();
 
-    char user_info2[] = "Displaying Map Food\n";
-    ncursepoint(0,0,user_info2,1);
-    for(int row = 0; row < map_a.rows; row++)
-    {
-        for(int col = 0; col < map_a.cols; col++)
-        {
-            char display_val[10];
-            //change what to display
-            sprintf(display_val, "%d", map_a.tiles[row][col].food);
-            int color_pair_val;
-            if(map_a.tiles[row][col].tiletype == ocean)
-            {
-                color_pair_val = 2;
-            }
-            else if(map_a.tiles[row][col].tiletype == lake)
-            {
-                color_pair_val = 3;
-            }
-            else if(map_a.tiles[row][col].tiletype == river)
-            {
-                color_pair_val = 4;
-            }
-            else if(map_a.tiles[row][col].tiletype == flat)
-            {
-                color_pair_val = 5;
-            }
-            else if(map_a.tiles[row][col].tiletype == hill)
-            {
-                color_pair_val = 6;
-            }
-            else if(map_a.tiles[row][col].tiletype == mountain)
-            {
-                color_pair_val = 7;
-            }
-            ncursepoint(row+1,col * 2,display_val,color_pair_val);
-        }
-    }
 
-    refresh();               
-    getch();                  
-    clear();
-
-    char user_info3[] = "Displaying Map Production\n";
-    ncursepoint(0,0,user_info3,1);
-    for(int row = 0; row < map_a.rows; row++)
-    {
-        for(int col = 0; col < map_a.cols; col++)
-        {
-            char display_val[10];
-            //change what to display
-            sprintf(display_val, "%d", map_a.tiles[row][col].production);
-            int color_pair_val;
-            if(map_a.tiles[row][col].tiletype == ocean)
-            {
-                color_pair_val = 2;
-            }
-            else if(map_a.tiles[row][col].tiletype == lake)
-            {
-                color_pair_val = 3;
-            }
-            else if(map_a.tiles[row][col].tiletype == river)
-            {
-                color_pair_val = 4;
-            }
-            else if(map_a.tiles[row][col].tiletype == flat)
-            {
-                color_pair_val = 5;
-            }
-            else if(map_a.tiles[row][col].tiletype == hill)
-            {
-                color_pair_val = 6;
-            }
-            else if(map_a.tiles[row][col].tiletype == mountain)
-            {
-                color_pair_val = 7;
-            }
-            ncursepoint(row+1,col * 2,display_val,color_pair_val);
-        }
-    }
-
-    refresh();               
-    getch();                  
-    clear();
-
-    char user_info4[] = "Displaying Map Resources\n";
-    ncursepoint(0,0,user_info4,1);
-    for(int row = 0; row < map_a.rows; row++)
-    {
-        for(int col = 0; col < map_a.cols; col++)
-        {
-            char display_val[10];
-            //change what to display
-            sprintf(display_val, "%d", map_a.tiles[row][col].resource);
-            int color_pair_val;
-            if(map_a.tiles[row][col].tiletype == ocean)
-            {
-                color_pair_val = 2;
-            }
-            else if(map_a.tiles[row][col].tiletype == lake)
-            {
-                color_pair_val = 3;
-            }
-            else if(map_a.tiles[row][col].tiletype == river)
-            {
-                color_pair_val = 4;
-            }
-            else if(map_a.tiles[row][col].tiletype == flat)
-            {
-                color_pair_val = 5;
-            }
-            else if(map_a.tiles[row][col].tiletype == hill)
-            {
-                color_pair_val = 6;
-            }
-            else if(map_a.tiles[row][col].tiletype == mountain)
-            {
-                color_pair_val = 7;
-            }
-            ncursepoint(row+1,col * 2,display_val,color_pair_val);
-        }
-    }
-
-    refresh();               
-    getch();                  
-    clear();
-    
-
-
-
-
-
-
-
-    endwin(); //close ncurses
-
-    return 0;
 }
+
+
+void display_map(struct MapData mymap)
+{
+    initscr();               // Initialize ncurses
+    start_color();           // Initialize color functionality
+    raw();                   // Disable line buffering
+    noecho();                // Don't echo user input
+    curs_set(0);             // Hide the cursor
+
+    display_terrain_color(1,mymap);
+    display_terrain_color(2,mymap);
+    endwin(); //close ncurses
+}
+
+//int main() {
+    //struct MapData map_a = map_initialize_default();
+    //display_map(map_a);
+    //return 0;
+//}
