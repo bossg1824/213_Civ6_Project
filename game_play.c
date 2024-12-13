@@ -1,6 +1,7 @@
 #include "civ.h"
-#include "map_val_displayer.c"
-
+//#include "map_val_displayer.c"
+#include "game_initialize.c"
+#include "display.c"
 
 
 struct PlayerData_List init_players()
@@ -10,7 +11,7 @@ struct PlayerData_List init_players()
     players.length = 0;
     for(int i = 0; i < num_players;i++)
     {
-        struct PlayerData_Node player_node;
+        struct PlayerData_Node * player_node = calloc(1, sizeof(struct PlayerData_Node));
         struct PlayerData player;
         player.player_id = i;
         char player_name[20];
@@ -25,15 +26,15 @@ struct PlayerData_List init_players()
         player.faith_per_turn = 0;
         player.science_per_turn = 0;
         player.production_per_turn = 0;
-        player_node.data = player;
-        player_node.next = NULL;
+        player_node->data = player;
+        player_node->next = NULL;
         if(players.head == NULL)
         {
-            players.head = &player_node;
+            players.head = player_node;
         }
         else
         {
-            players.head->next = &player_node;
+            players.head->next = player_node;
         }
         players.length++;
     }
@@ -43,8 +44,9 @@ struct PlayerData_List init_players()
 bool coord_under_player_control(int row, int col, struct PlayerData_List players)
 {
     struct PlayerData_Node *current_player_node = players.head;
-    while(current_player_node != NULL)
+    while((current_player_node != NULL) )
     {
+
         struct City_List cities = current_player_node->data.cities;
         struct City_Node *city = cities.head;
         while(city != NULL)
@@ -103,9 +105,11 @@ bool create_city(int row, int col, int player_id, struct PlayerData_List players
 int main() {
     struct MapData map_a = map_initialize_default();
     struct PlayerData_List players_a = init_players();
-    display_map(map_a);
-    
-
+    //display_map(map_a);
+    int i =0;
+    while(i < 3){
+    i += display_loop(&(players_a.head->data), &map_a, &players_a);
+    }
     int city_count = 0;
     //initialize spawns
     int spawns_completed = 0;
@@ -129,8 +133,7 @@ int main() {
         
     }
     
-
-
+    
 
 
 

@@ -28,7 +28,8 @@ industrial_zone,
 holy_site,
 aquaduct,
 mine,
-farm
+farm,
+city
 };
 
 //Thus 0-2 are not buildable
