@@ -284,6 +284,8 @@ char terrain_char(int terrain_num){
 int resource_color_num(int resource_num){
     switch (resource_num)
     {
+        case none_bonus:
+            return default_int;
         case iron:
             return IRON_GRAY;
         case niter:
@@ -300,6 +302,8 @@ int resource_color_num(int resource_num){
 char resource_char(int resource_num){
     switch (resource_num)
     {
+        case none_bonus:
+            return default_int;
         case iron:
             return 'I';
         case niter:
@@ -319,6 +323,8 @@ int district_color_num(struct TileData * tile, struct PlayerData_List* players){
     }
 
     switch((tile->buildable_structure->district.district_type)){
+        case none_district:
+            return default_int;
         case campus:
             return CAMPUS_COLOR;
         case industrial_zone:
@@ -344,6 +350,8 @@ char district_char(struct TileData * tile){
     }
 
     switch((tile->buildable_structure->district.district_type)){
+        case none_district:
+            return default_int;
         case campus:
             return 'C';
         case industrial_zone:
@@ -673,7 +681,31 @@ int display_loop(struct PlayerData * player, struct MapData* map, struct PlayerD
     case KEY_MOUSE:
         if(getmouse(&mouse_event) == OK){
             if(mouse_event.bstate & BUTTON1_PRESSED){
-                printf("Left Click\n");
+                //if pressing on the info display
+                if(mouse_event.y <= 3){
+                    //do nothing
+                    break;
+                } 
+                //if clicking in the tech window
+                if(mouse_event.y >= LINES - TECH_WINDOW_SIZE){
+                    break;
+                }
+                //if clicking on the main diplsay
+                if(mouse_event.y > 3 && mouse_event.y < LINES - TECH_WINDOW_SIZE && mouse_event.x > 1 && mouse_event.x < COLS){
+                    //setup space for storing a tile coordinate
+                    struct Tile_Coord * tile_location = calloc(1, sizeof(struct Tile_Coord));
+                    //calculate the x and y coords of the tile
+                    tile_location->x = displays->leftmost_column + (mouse_event.x - 1)/(TILE_WIDTH - 1);
+                    tile_location->y = displays->top_row + (mouse_event.y - 3)/(TILE_HEIGHT - 1);
+                    //if clicked beyond the tiles of the board act like you clicked the edge of the board instead
+                    if(tile_location->x >= tile_cols){
+                        tile_location->x = tile_cols - 1;
+                    }
+                    if(tile_location->y >= tile_rows){
+                        tile_location->y = tile_rows - 1;
+                    }
+                    break;
+                }
             }
         }
     default:

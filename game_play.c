@@ -242,23 +242,23 @@ struct Buildable_Structure create_none_structure()
     return empty;
 }
 
-struct Buildable_Structure create_city_center()
+struct Buildable_Structure* create_city_center()
 {
-    struct Buildable_Structure center;
-    center.is_empty = false;
+    struct Buildable_Structure * center = calloc(1, sizeof(struct Buildable_Structure));
+    center->is_empty = false;
     struct District center_district;
     center_district.current_level = 0;
     center_district.max_level = 0;
     center_district.production_cost_to_upgrade = 0;
     center_district.district_type = city;
-    center.district = center_district;
-    center.bonus_type = none_bonus;
-    center.bonus_amount = 0;
-    center.production_cost = 0;
-    center.production_spent = 0;
-    center.completed = false;
-    center.estimated_turns_until_completion = 0;
-    center.build_id = 0;
+    center->district = center_district;
+    center->bonus_type = none_bonus;
+    center->bonus_amount = 0;
+    center->production_cost = 0;
+    center->production_spent = 0;
+    center->completed = false;
+    center->estimated_turns_until_completion = 0;
+    center->build_id = 0;
     return center;
 }
 
@@ -309,6 +309,7 @@ void create_city(int row, int col, int player_id, struct PlayerData_List players
     struct Tile_Coord center;
     center.x = row;
     center.y = col;
+
     center_node->data = center;
     center_node->next = NULL;
     worked.length = 1;
@@ -322,15 +323,16 @@ void create_city(int row, int col, int player_id, struct PlayerData_List players
     city_data.current_structure_in_production = buildable_structure;
     struct Buildable_Structure_List built;
     struct Buildable_Structure_Node *city_center_node = calloc(1, sizeof(struct Buildable_Structure_Node));
-    struct Buildable_Structure city_structure = create_city_center();
-    city_center_node->data = city_structure;
+    struct Buildable_Structure * city_structure = create_city_center();
+    city_center_node->data = *city_structure;
     city_center_node->next = NULL;
     built.head = city_center_node;
     built.length = 1;
     city_data.built_structures = built;
     //printf("district type: %d",city_data.built_structures.head->data.district.district_type);
 
-    
+    //adding the built city to the map
+    map->tiles[row][col].buildable_structure = city_structure;
 
     //attach the data
     new_city->data = city_data;
@@ -391,6 +393,7 @@ int main() {
         {
             printf("A\n");
             create_city(true_row,true_col,current_node->data.player_id,players_a,&map_a);
+            printf("B\n");
             //printf("PLAYER %d\n",current_node->data.player_id);
             spawns_completed++;
             //printf("C");
@@ -399,6 +402,7 @@ int main() {
         }
         
     }
+    display_loop(&(players_a.head->data), &map_a, &players_a);
     //printf("ENDED");
 
     // for(int i = 0; i < tile_rows; i++)
@@ -414,7 +418,7 @@ int main() {
 
 
 
-    display_loop(&(players_a.head->data), &map_a, &players_a);
+    //display_loop(&(players_a.head->data), &map_a, &players_a);
     
     
 
