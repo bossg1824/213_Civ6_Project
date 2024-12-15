@@ -447,6 +447,7 @@ struct MapData map_initialize_default()
             tile.coordinate = coord;
             tile.tiletype = tile_type;
             tile.resource = resource;
+            tile.civ_id_controlling = civ_id_controlling;
             tile.city_id_controlling = default_int;
             tile.production = production;
             tile.food = food;
@@ -466,6 +467,7 @@ struct MapData map_initialize_default()
                 mymap.tiles[y][x].tiletype = ocean;
                 mymap.tiles[y][x].food = 1;
                 mymap.tiles[y][x].production = 0;
+                mymap.tiles[y][x].resource = none;
             }
         }
     }  

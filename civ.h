@@ -15,6 +15,7 @@
 
 //Enums needed for Map Data
 enum BonusType{
+none_bonus,
 science,
 faith,
 production,
@@ -23,6 +24,7 @@ food
 };
 
 enum DistrictType{
+none_district,
 campus,
 industrial_zone,
 holy_site,
@@ -74,6 +76,7 @@ struct District{
 
 //Note this is used in both Map and Playerdata (to see if city is stil producing something)
 struct Buildable_Structure{
+    bool is_empty;
     struct District district;
     enum BonusType bonus_type;
     int bonus_amount;
@@ -136,10 +139,12 @@ struct City{
     int food_per_tern;
     int food_accumulated;
     int settlers_produced; //every settler you make increases the prod cost of creating another settler
+    bool focus_food;
+    bool focus_production;
+    struct Tile_Coord_List worked_tiles;
     struct Tile_Coord_List tiles_under_controll; //An array of the tiles that are under this city's controll
     struct Buildable_Structure current_structure_in_production; //The structure this city is currently putting its production towards
     struct Buildable_Structure_List built_structures; //Linked list of structures that have been produced in this city
-    struct City* next;
 };
 
 struct City_Node {
