@@ -8,8 +8,8 @@
 #define TECH_WINDOW_SIZE 9
 #define TILE_WIDTH 5
 #define TILE_HEIGHT 5
-#define NUM_PLAYER_COLORS 2
-#define PLAYER_COLOR_OFFSET 1
+#define NUM_PLAYER_COLORS 8
+#define PLAYER_COLOR_OFFSET 3
 
 bool colors_initialized = false;
 bool curses_initialized = false;
@@ -371,6 +371,21 @@ char district_char(struct TileData * tile){
     }
 }
 
+struct City * find_city(int city_id, struct PlayerData_List * players){
+    struct PlayerData_Node * cur_player = players->head;
+    while(cur_player != NULL){
+        struct City_Node * cur_city = cur_player->data.cities.head;
+        while(cur_city != NULL){
+            if(cur_city->data.city_id == city_id){
+                return &(cur_city->data);
+            }
+            cur_city = cur_city->next;
+        }
+        cur_player = cur_player->next;
+    }
+    return NULL;
+}
+
 void draw_edge(WINDOW* map_display, int win_block_row, int win_block_col, struct MapData*map, int map_row, int map_col, struct PlayerData_List* players, bool horizontal){
    
     if(map_row >= tile_rows){
@@ -538,8 +553,39 @@ void draw_tile(WINDOW* map_display, int win_block_row, int win_block_col, struct
     mvwprintw(map_display, 1 + 2 + (win_block_row * (TILE_HEIGHT - 1)), 1 + 3 + (win_block_col * (TILE_WIDTH - 1)), "%c", tilechar);
     mvwprintw(map_display, 1 + 2 + (win_block_row * (TILE_HEIGHT - 1)), 1 + 1 + (win_block_col * (TILE_WIDTH - 1)), "%c", tilechar);
     mvwprintw(map_display, 1 + 3 + (win_block_row * (TILE_HEIGHT - 1)), 1 + 2 + (win_block_col * (TILE_WIDTH - 1)), "%c", tilechar);
-    mvwprintw(map_display, 1 + 3 + (win_block_row * (TILE_HEIGHT - 1)), 1 + 3 + (win_block_col * (TILE_WIDTH - 1)), "%c", tilechar);
-    
+
+    //getting what is built on the tile
+    int district_col_num = district_color_num(&(cur_tile), players);
+    char dist_char = district_char(&(cur_tile));
+    if(district_col_num != default_int){
+        wattron(map_display, COLOR_PAIR(district_col_num));
+        wattroff(map_display, A_DIM);
+        if(dist_char == '^'){
+            wattron(map_display, A_BOLD);
+        }
+    }
+
+    mvwprintw(map_display, 1 + 2 + (win_block_row * (TILE_HEIGHT - 1)), 1 + 2 + (win_block_col * (TILE_WIDTH - 1)), "%c", dist_char != default_int ? dist_char : tilechar);
+
+    if(district_col_num != default_int){
+        wattroff(map_display, COLOR_PAIR(district_col_num));
+        wattroff(map_display, A_BOLD);
+        wattron(map_display, A_DIM);
+    }
+
+    if(district_col_num != default_int){
+        wattron(map_display, COLOR_PAIR(PRODUCTION_DISPLAY));
+        struct City * pop_target = find_city(map->tiles[map_row][map_col].city_id_controlling, players);
+        int population = 0;
+        if(pop_target != NULL){
+            population = pop_target->population;
+        }
+        mvwprintw(map_display, 1 + 3 + (win_block_row * (TILE_HEIGHT - 1)), 1 + 3 + (win_block_col * (TILE_WIDTH - 1)), "%d", population);
+        wattroff(map_display, COLOR_PAIR(PRODUCTION_DISPLAY));
+        wattron(map_display, COLOR_PAIR(tilecolor));
+    } else {
+        mvwprintw(map_display, 1 + 3 + (win_block_row * (TILE_HEIGHT - 1)), 1 + 3 + (win_block_col * (TILE_WIDTH - 1)), "%c", tilechar);
+    }
     //getting what the resource is
     int res_color_num = resource_color_num(cur_tile.resource); 
     //if there is a resource
@@ -561,24 +607,7 @@ void draw_tile(WINDOW* map_display, int win_block_row, int win_block_col, struct
         wattron(map_display, COLOR_PAIR(tilecolor));
     }
 
-    //getting what is built on the tile
-    int district_col_num = district_color_num(&(cur_tile), players);
-    char dist_char = district_char(&(cur_tile));
-    if(district_col_num != default_int){
-        wattron(map_display, COLOR_PAIR(district_col_num));
-        wattroff(map_display, A_DIM);
-        if(dist_char == '^'){
-            wattron(map_display, A_BOLD);
-        }
-    }
-
-    mvwprintw(map_display, 1 + 2 + (win_block_row * (TILE_HEIGHT - 1)), 1 + 2 + (win_block_col * (TILE_WIDTH - 1)), "%c", dist_char != default_int ? dist_char : tilechar);
-
-    if(district_col_num != default_int){
-        wattroff(map_display, COLOR_PAIR(district_col_num));
-        wattroff(map_display, A_BOLD);
-        wattron(map_display, A_DIM);
-    }
+    
     //turn of the default tile color
     wattroff(map_display, COLOR_PAIR(tilecolor));
     
