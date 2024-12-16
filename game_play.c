@@ -222,28 +222,29 @@ struct PlayerData_Node *find_player(int player_id, struct PlayerData_List player
     return NULL;
 }
 
-struct Buildable_Structure create_none_structure()
+struct Buildable_Structure* create_none_structure()
 {
-    struct Buildable_Structure empty;
-    empty.is_empty = true;
+    struct Buildable_Structure* empty= calloc(1, sizeof(struct Buildable_Structure));;
+    empty->is_empty = true;
     struct District empty_district;
     empty_district.current_level = 0;
     empty_district.max_level = 0;
     empty_district.production_cost_to_upgrade = 0;
     empty_district.district_type = none_district;
-    empty.district = empty_district;
-    empty.bonus_type = none_bonus;
-    empty.bonus_amount = 0;
-    empty.production_cost = 0;
-    empty.production_spent = 0;
-    empty.completed = false;
-    empty.estimated_turns_until_completion = 0;
-    empty.build_id = default_int;
+    empty->district = empty_district;
+    empty->bonus_type = none_bonus;
+    empty->bonus_amount = 0;
+    empty->production_cost = 0;
+    empty->production_spent = 0;
+    empty->completed = false;
+    empty->estimated_turns_until_completion = 0;
+    empty->build_id = default_int;
     return empty;
 }
 
 struct Buildable_Structure* create_city_center()
 {
+    printf("HEY");
     struct Buildable_Structure * center = calloc(1, sizeof(struct Buildable_Structure));
     center->is_empty = false;
     struct District center_district;
@@ -318,8 +319,7 @@ void create_city(int row, int col, int player_id, struct PlayerData_List players
 
     struct Tile_Coord_List controlled = generate_city_area(row,col,map,player_id,city_data.city_id);
     city_data.tiles_under_controll = controlled;
-
-    struct Buildable_Structure buildable_structure = create_none_structure();
+    struct Buildable_Structure buildable_structure = *create_none_structure();
     city_data.current_structure_in_production = buildable_structure;
     struct Buildable_Structure_List built;
     struct Buildable_Structure_Node *city_center_node = calloc(1, sizeof(struct Buildable_Structure_Node));
@@ -362,24 +362,18 @@ void create_city(int row, int col, int player_id, struct PlayerData_List players
 }
 
 int main() {
-    //printf("TEST\n");
+    //initialize map and players
     struct MapData map_a = map_initialize_default();
     struct PlayerData_List players_a = init_players();
 
 
-    //display_map(map_a);
-
-    //display_loop(&(players_a.head->data), &map_a, &players_a);
-
-    int number_players_list = count_players(players_a);
-    //printf("number_players: %d", number_players_list);
-
+    //we now spawn in the players
+    int number_players = count_players(players_a);
     int city_count = 0;
-    //initialize spawns
     int spawns_completed = 0;
     struct PlayerData_Node *current_node = players_a.head;
     
-    while(spawns_completed < num_players)
+    while(spawns_completed < number_players)
     {
         int min_row = 0;
         int max_row = tile_rows - 1;
@@ -387,38 +381,63 @@ int main() {
         int min_col = 0;
         int max_col = tile_cols - 1;
         int true_col = rand() % (max_col - min_col + 1) + min_col;
-        //printf("A\n");
         if((!coord_under_player_control(true_row,true_col,players_a)) & (map_a.tiles[true_row][true_col].tiletype != mountain) & (map_a.tiles[true_row][true_col].tiletype != ocean)
         & (map_a.tiles[true_row][true_col].tiletype != lake))
         {
-            printf("A\n");
-            create_city(true_row,true_col,current_node->data.player_id,players_a,&map_a);
-            printf("B\n");
-            //printf("PLAYER %d\n",current_node->data.player_id);
-            spawns_completed++;
-            //printf("C");
-            current_node = current_node->next;
-            //printf("D");
+            
+            if((num_players == 2))
+            {
+                if(!((true_col < (tile_cols/4)) | (true_col >= (3*(tile_cols/4)))))
+                {
+                    continue;
+                }
+                create_city(true_row,true_col,current_node->data.player_id,players_a,&map_a);
+                spawns_completed++;
+                current_node = current_node->next;
+                create_city(true_row,tile_cols -1 -true_col,current_node->data.player_id,players_a,&map_a);
+                spawns_completed++;
+                current_node = current_node->next;
+            }
+            else if((num_players == 4) & (tile_cols == tile_rows))
+            {
+                if(!(((true_col < (tile_cols/2)) & (true_row < (tile_rows/2))) & ((true_col < (tile_cols/4)) | (true_row < (tile_rows/4)))))
+                {
+                    continue;
+                }
+                int half_size = tile_rows / 2;
+                int rot_90_true_row = true_col; int rot_90_true_col = tile_cols - 1 - true_row;
+                int rot_180_true_row = tile_cols - 1 - true_row; int rot_180_true_col = tile_cols - 1 - true_col;
+                int rot_270_true_row = tile_cols -1 - true_col; int rot_270_true_col = true_row;
+
+                create_city(true_row,true_col,current_node->data.player_id,players_a,&map_a);
+                spawns_completed++;
+                current_node = current_node->next;
+                create_city(rot_90_true_row,rot_90_true_col,current_node->data.player_id,players_a,&map_a);
+                spawns_completed++;
+                current_node = current_node->next;
+                create_city(rot_180_true_row,rot_180_true_col,current_node->data.player_id,players_a,&map_a);
+                spawns_completed++;
+                current_node = current_node->next;
+                create_city(rot_270_true_row,rot_270_true_col,current_node->data.player_id,players_a,&map_a);
+                spawns_completed++;
+                current_node = current_node->next;
+            }
+            else
+            {
+                create_city(true_row,true_col,current_node->data.player_id,players_a,&map_a);
+                spawns_completed++;
+                current_node = current_node->next;
+            }
         }
         
     }
+    //player spawning complete
+
+
+
+
     display_loop(&(players_a.head->data), &map_a, &players_a);
-    //printf("ENDED");
-
-    // for(int i = 0; i < tile_rows; i++)
-    // {
-    //     for(int j = 0; j < tile_rows; j++)
-    //     {
-    //         printf("%d",map_a.tiles[i][j].civ_id_controlling);
-    //     }
-    //     printf("\n");
-    // }
-
     print_cities(players_a);
-
-
-
-    //display_loop(&(players_a.head->data), &map_a, &players_a);
     
     
 
