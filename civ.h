@@ -186,4 +186,101 @@ int player_turn;
 struct MapData mymap;    
 struct PlayerData_List players;
 }; 
-#endif
+
+//calculate the size of a given GameState including all pointed to memory
+size_t size_of_civ_state(const struct GameState * civ_state){
+    //start with no size
+    size_t civ_size = 0;
+
+    //add the base size of a GameState struct
+    civ_size += sizeof(struct GameState);
+    //for each tile
+    for(int i = 0; i < civ_state->mymap.rows; i++){
+        for(int j = 0; j < civ_state->mymap.cols; j++){
+            struct TileData* cur = &(civ_state->mymap.tiles[i][j]);
+            //if there exists a buldable structure
+            if(cur->buildable_structure != NULL){
+                //add the size of a buildable structure
+                civ_size += sizeof(struct Buildable_Structure);
+            }
+        }
+    }
+
+    //for each player in the player list
+    struct PlayerData_Node * travel = civ_state->players.head;
+    //while a player exists
+    while(travel != NULL){
+        //add the base size of a player
+        civ_size += sizeof(struct PlayerData_Node);
+        //add the length of the player name
+        civ_size += (strlen(travel->data.civ_name) * sizeof(char));
+        
+        
+        
+        if(travel->data.techtree != NULL){
+            //add the base size of a tech tree
+            civ_size += sizeof(struct TechTree);
+
+            //for each node of research in each tech tree
+            for(int i = 0; i < sub_tech_tree_size; i++){
+                //add the length of the tech name
+                civ_size += (strlen(travel->data.techtree->rocketry_nodes[i].tech_bonus_name) * sizeof(char));
+                civ_size += (strlen(travel->data.techtree->uranium_nodes[i].tech_bonus_name) * sizeof(char));
+            }
+        }
+        //for each city the player owns
+        struct City_Node * city_travel = travel->data.cities.head;
+        //while a city exists
+        while(city_travel != NULL){
+            //add the base size of a city node
+            civ_size += sizeof(struct City_Node);
+            struct City visiting = city_travel->data;
+            //add the length of the city name
+            civ_size += (strlen(visiting.city_name) * sizeof(char));
+
+            //for each tile being worked in the city
+            struct Tile_Coord_Node* worked = visiting.worked_tiles.head;
+            //while a tile exists
+            while(worked != NULL){
+                //add the size of a tile node
+                civ_size += sizeof(struct Tile_Coord_Node);
+
+                //go to the next tile node
+                worked = worked->next;
+            }  
+
+            //for each tile under city controll
+            struct Tile_Coord_Node* controlled = visiting.tiles_under_controll.head;
+            //while a tile exists
+            while(controlled != NULL){
+                //add the size of a tile node
+                civ_size += sizeof(struct Tile_Coord_Node);
+
+                //go to the next tile node
+                controlled = controlled->next;
+            }
+
+            //for each buildable structure in the built list
+            struct Buildable_Structure_Node* building = visiting.built_structures.head;
+            //while there exists a buildable structure
+            while(building != NULL){
+                //add the size of a buildable structure
+                civ_size += sizeof(struct Buildable_Structure_Node);
+
+                //go to the next building
+                building = building->next;
+            }
+
+            //go to the next city
+            city_travel = city_travel->next;
+        }
+
+        //go to the next player
+        travel = travel->next;
+    }
+
+    //return the calculated size
+    return civ_size;
+}
+
+#endif;
