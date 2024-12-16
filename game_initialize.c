@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string.h>
 #include <stdio.h>    
 #include <stdlib.h>   
@@ -545,7 +547,7 @@ struct MapData map_initialize_default()
                             for(int n = -river_nonproximity_radius; n < river_nonproximity_radius; n++)
                             {
                                 int new_coord_y_radius = new_coord_y + n;
-                                if((new_coord_y_radius < 0) | (new_coord_y_radius > tile_cols))
+                                if((new_coord_y_radius < 0) | (new_coord_y_radius >= tile_cols))
                                 {
                                     continue;
                                 }
