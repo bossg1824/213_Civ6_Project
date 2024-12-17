@@ -1,15 +1,12 @@
 #include <string.h>
 #include <ncurses.h>
 #include "civ.h"
-//#include "game_initialize.c"
  
-#define max_height_displayed 90 
-#define max_width_displayed 30
 #define TECH_WINDOW_SIZE 9
 #define TILE_WIDTH 5
 #define TILE_HEIGHT 5
 #define NUM_PLAYER_COLORS 8
-#define PLAYER_COLOR_OFFSET 3
+#define PLAYER_COLOR_OFFSET 2
 
 bool colors_initialized = false;
 bool curses_initialized = false;
@@ -96,7 +93,7 @@ void setup_colors(){
 }
 
 void setup_curses(){
-    if(curses_initialized) return;
+    if(curses_initialized) return; //if ncurses has already been initialized before
     initscr();               // Initialize ncurses
     start_color();           // Initialize color functionality
     raw();                   // Disable line buffering
@@ -571,9 +568,10 @@ void draw_tile(WINDOW* map_display, int win_block_row, int win_block_col, struct
         wattroff(map_display, COLOR_PAIR(district_col_num));
         wattroff(map_display, A_BOLD);
         wattron(map_display, A_DIM);
+        wattron(map_display, COLOR_PAIR(tilecolor));
     }
 
-    if(district_col_num != default_int){
+    if(dist_char == '^'){
         wattron(map_display, COLOR_PAIR(PRODUCTION_DISPLAY));
         struct City * pop_target = find_city(map->tiles[map_row][map_col].city_id_controlling, players);
         int population = 0;
