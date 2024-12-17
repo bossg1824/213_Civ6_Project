@@ -72,6 +72,25 @@ bool coord_under_player_control(int row, int col, struct PlayerData_List players
     return false;
 }
 
+void print_tiles_buildable (struct MapData map)
+{
+    for (int i = 0; i < tile_rows; i++)
+    {
+        for (int j = 0; j < tile_rows; j++)
+        {
+            enum DistrictType dist_val = none_district;
+            if(map.tiles[i][j].buildable_structure != NULL)
+            {
+                dist_val = map.tiles[i][j].buildable_structure->district.district_type;
+            }
+            printf("%d ", dist_val);
+        }
+        printf("\n");
+    }
+}
+
+
+
 void print_cities(struct PlayerData_List players)
 {   
     printf("PRINTING CITIES\n");
@@ -289,7 +308,7 @@ struct Buildable_Structure* create_build_structre(enum DistrictType type, int bu
     }
     else if(type == city)
     {
-        printf("Placed city on tile row: %d, col: %d\n",coord.x,coord.y);
+        printf("Attempting to build city on tile row: %d, col: %d\n",coord.x,coord.y);
         struct Buildable_Structure * structure = create_beta_structure();
         structure->district.district_type = city;
         structure->bonus_type = food;
@@ -402,7 +421,8 @@ void create_city(int row, int col, int player_id, struct PlayerData_List players
         //we are ensured the next is null
         last_city->next = new_city;
     }
-    current_player_data.cities.length+=1;
+    current_player_node->data.cities.length+=1;
+    //current_player_data.cities.length+=1;
     //printf("POST TYPE %d", current_player_node->data.cities.head->data.built_structures.head->data.district.district_type);
     //printf("POST Name %s", current_player_node->data.cities.head->data.city_name);
 }
@@ -480,7 +500,20 @@ void harvest_food_production(struct MapData *map, struct PlayerData_List players
                         //check if we finished constructing a city
                         if(mycity->data.current_structure_in_production.district.district_type == city)
                         {
-                            create_city(mycity->data.current_structure_in_production.coordinate.x,mycity->data.current_structure_in_production.coordinate.y,current_player_node->data.player_id,players,map);
+                            //if (!coord_under_player_control(mycity->data.current_structure_in_production.coordinate.x,mycity->data.current_structure_in_production.coordinate.y,players))
+                            //{
+                                //create_city(mycity->data.current_structure_in_production.coordinate.x,mycity->data.current_structure_in_production.coordinate.y,current_player_node->data.player_id,players,map);
+                            //}
+                            if(map->tiles[mycity->data.current_structure_in_production.coordinate.x][mycity->data.current_structure_in_production.coordinate.y].civ_id_controlling == default_int)
+                            {
+                                printf("Placed a city on %d %d\n",mycity->data.current_structure_in_production.coordinate.x,mycity->data.current_structure_in_production.coordinate.y);
+                                create_city(mycity->data.current_structure_in_production.coordinate.x,mycity->data.current_structure_in_production.coordinate.y,current_player_node->data.player_id,players,map);
+                            }
+                            else
+                            {
+                                printf("Somebody already claimed the land on %d %d! Could not build city: production wasted\n", mycity->data.current_structure_in_production.coordinate.x, mycity->data.current_structure_in_production.coordinate.y);
+                            }
+                            
                         }//else add structure to built list and display in map
                         else
                         {
@@ -499,12 +532,19 @@ void harvest_food_production(struct MapData *map, struct PlayerData_List players
                             //the next field is now null
                             current_built_obj->next = new_completed_building;
                             mycity->data.built_structures.length++;
-                            map->tiles[mycity->data.current_structure_in_production.coordinate.x][mycity->data.current_structure_in_production.coordinate.y].buildable_structure = &(mycity->data.current_structure_in_production);
+                            struct Buildable_Structure *local_map_copy = calloc(1,sizeof(struct Buildable_Structure));
+                            memcpy(local_map_copy,&(mycity->data.current_structure_in_production),sizeof(struct Buildable_Structure));
+
+
+                            map->tiles[mycity->data.current_structure_in_production.coordinate.x][mycity->data.current_structure_in_production.coordinate.y].buildable_structure = local_map_copy;
                             printf("Placed a %d building on tile row %d, col %d\n", map->tiles[mycity->data.current_structure_in_production.coordinate.x][mycity->data.current_structure_in_production.coordinate.y].buildable_structure->district.district_type, mycity->data.current_structure_in_production.coordinate.x, mycity->data.current_structure_in_production.coordinate.y);
                         }
                     }
 
                     //change whats currently in production to default
+                    struct Buildable_Structure finished_product = mycity->data.current_structure_in_production;
+                    
+                    //free(finished_product);
                     mycity->data.current_structure_in_production = *create_none_structure();
                 }
             }
@@ -537,7 +577,7 @@ bool coord_in_list(struct Tile_Coord_List coord_list, int row, int col)
 
 struct Tile_Coord_List get_available_coords_settler(struct MapData map, struct City city)
 {
-    printf("WOWZA");
+    //printf("WOWZA");
 
     struct Tile_Coord_List new_coords;
     ///struct Tile_Coord_Node *current_node = calloc(1, sizeof(struct Tile_Coord_Node));
@@ -838,7 +878,7 @@ void make_move(int player_id, struct PlayerData_List players, struct MapData *ma
             int min = 0;
             int max = 2;
             int choice = rand() % (max- min + 1) + min;  
-            printf("REEEE");
+            //printf("REEEE");
 
             if(choice == 0)//farm
             {
@@ -852,6 +892,7 @@ void make_move(int player_id, struct PlayerData_List players, struct MapData *ma
                     struct Buildable_Structure *building = create_build_structre(farm,mycity->data.built_structures.length, cord_to_choose);
                     printf("Creating farm on tile %d %d, on city with city center: %d %d\n",cord_to_choose.x,cord_to_choose.y,mycity->data.city_center_coord.x,mycity->data.city_center_coord.y);
                     mycity->data.current_structure_in_production = *building;
+                    free(building);
                 }
                 city_move_attempt++;
             }
@@ -865,13 +906,21 @@ void make_move(int player_id, struct PlayerData_List players, struct MapData *ma
                     int location_choice = rand() % (max- min + 1) + min;
                     struct Tile_Coord cord_to_choose = get_ith_coord(possible_placement,location_choice);
                     struct Buildable_Structure *building = create_build_structre(mine,mycity->data.built_structures.length, cord_to_choose);
+                    printf("Creating mine on tile %d %d, on city with city center: %d %d\n",cord_to_choose.x,cord_to_choose.y,mycity->data.city_center_coord.x,mycity->data.city_center_coord.y);
                     mycity->data.current_structure_in_production = *building;
+                    free(building);
                 }
                 city_move_attempt++;
             }
             else if(choice == 2)//settler
             {   
-                printf("SETTLER\n");
+                //comment out used for debugging
+                //city_move_attempt++;
+                //continue;
+
+
+
+                //printf("SETTLER\n");
                 struct Tile_Coord_List possible_placement = get_available_coords(*map,mycity->data,city);
                 if(possible_placement.length != 0)
                 {
@@ -880,11 +929,13 @@ void make_move(int player_id, struct PlayerData_List players, struct MapData *ma
                     int location_choice = rand() % (max- min + 1) + min;
                     struct Tile_Coord cord_to_choose = get_ith_coord(possible_placement,location_choice);
                     struct Buildable_Structure *building = create_build_structre(city,mycity->data.built_structures.length, cord_to_choose);
+                    printf("Creating city on tile %d %d, on city with city center: %d %d\n",cord_to_choose.x,cord_to_choose.y,mycity->data.city_center_coord.x,mycity->data.city_center_coord.y);
                     mycity->data.current_structure_in_production = *building;
+                    free(building);
                 }
                 else
                 {
-                    printf("SETTLER ERROR?\n");
+                    //printf("NOWhere to put a settler\n");
                 }
                 city_move_attempt++;
             }
@@ -981,27 +1032,21 @@ int main() {
         
     }
     //player spawning complete
-    int moves_into_future = 170;
+    int moves_into_future = 80;
     for(int i = 0; i < moves_into_future; i++)
     {
         make_all_moves(players_a, &map_a);
         harvest_food_production(&map_a,players_a);
         printf("MOVE %d\n",i);
         print_cities(players_a);
-        if(map_a.tiles[18][5].buildable_structure == NULL)
-        {
-            printf("The object on tile %d %d is of the type nothing\n", 18,5);
-        }
-        else
-        {
-            printf("The object on tile %d %d is of the type %d\n", 18,5 ,map_a.tiles[18][5].buildable_structure->district.district_type);
-        }
+        //print_tiles_buildable(map_a);
+        printf("Player %d has %d many cities\n",players_a.head->data.player_id,players_a.head->data.cities.length);
         
     }
 
 
     display_loop(&(players_a.head->data), &map_a, &players_a);
-    print_cities(players_a);
+    //print_cities(players_a);
     
     
 
