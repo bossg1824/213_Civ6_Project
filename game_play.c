@@ -318,6 +318,60 @@ struct Buildable_Structure* create_build_structre(enum DistrictType type, int bu
         structure->coordinate = coord;
         return structure;
     }
+    else if(type == campus)
+    {
+        printf("Attempting to build city on tile row: %d, col: %d\n",coord.x,coord.y);
+        struct Buildable_Structure * structure = create_beta_structure();
+        structure->district.max_level = 3;
+        structure->district.production_cost_to_upgrade = 120;
+        structure->district.district_type = campus;
+        structure->bonus_type = science;
+        structure->bonus_amount = 5;
+        structure->production_cost = 80;
+        structure->build_id = build_id;
+        structure->coordinate = coord;
+        return structure;
+    }
+    else if(type == holy_site)
+    {
+        printf("Attempting to build city on tile row: %d, col: %d\n",coord.x,coord.y);
+        struct Buildable_Structure * structure = create_beta_structure();
+        structure->district.max_level = 3;
+        structure->district.production_cost_to_upgrade = 100;
+        structure->district.district_type = holy_site;
+        structure->bonus_type = faith;
+        structure->bonus_amount = 6;
+        structure->production_cost = 70;
+        structure->build_id = build_id;
+        structure->coordinate = coord;
+        return structure;
+    }
+    else if(type == aquaduct)
+    {
+        printf("Attempting to build city on tile row: %d, col: %d\n",coord.x,coord.y);
+        struct Buildable_Structure * structure = create_beta_structure();
+        structure->district.district_type = aquaduct;
+        structure->bonus_type = housing;
+        structure->bonus_amount = 4;
+        structure->production_cost = 40;
+        structure->build_id = build_id;
+        structure->coordinate = coord;
+        return structure;
+    }
+    else if(type == industrial_zone)
+    {
+        printf("Attempting to build city on tile row: %d, col: %d\n",coord.x,coord.y);
+        struct Buildable_Structure * structure = create_beta_structure();
+        structure->district.max_level = 2;
+        structure->district.production_cost_to_upgrade = 200;
+        structure->district.district_type = industrial_zone;
+        structure->bonus_type = production;
+        structure->bonus_amount = 10;
+        structure->production_cost = 100;
+        structure->build_id = build_id;
+        structure->coordinate = coord;
+        return structure;
+    }
     else
     {
         struct Buildable_Structure * structure = create_beta_structure();
@@ -740,9 +794,48 @@ struct Tile_Coord_List get_available_aquaduct(struct MapData map, struct City ci
 }
 
 
-struct Tile_Coord_List get_available_coords(struct MapData map, struct City mycity, enum DistrictType type)
+bool city_has_district(struct City city, enum DistrictType targetdist)
 {
+    struct Buildable_Structure_Node* node = city.built_structures.head;
+    while(node != NULL)
+    {
+        if(node->data.district.district_type == targetdist)
+        {
+            return true;
+        }
+        node = node->next;
+    }
+    return false;
+}
 
+
+
+
+struct Tile_Coord_List get_available_coords(struct MapData map, struct City mycity, enum DistrictType type)
+{ 
+    struct Tile_Coord_List new_coords;
+    ///struct Tile_Coord_Node *current_node = calloc(1, sizeof(struct Tile_Coord_Node));
+    struct Tile_Coord_Node *current_node = NULL;
+    new_coords.head = current_node;
+    new_coords.length = 0;
+    if(type == aquaduct && city_has_district(mycity, type))
+    {
+        return new_coords;
+    }
+    else if(type == campus && city_has_district(mycity, type))
+    {
+        return new_coords;
+    }
+    else if(type == holy_site && city_has_district(mycity, type))
+    {
+        return new_coords;
+    }
+    else if(type == industrial_zone && city_has_district(mycity, type))
+    {
+        return new_coords;
+    }
+    
+    
     if(type == aquaduct)
     {
         return get_available_aquaduct(map,mycity);
@@ -751,12 +844,7 @@ struct Tile_Coord_List get_available_coords(struct MapData map, struct City myci
     {
         return get_available_coords_settler(map,mycity);
     }
-
-    struct Tile_Coord_List new_coords;
-    ///struct Tile_Coord_Node *current_node = calloc(1, sizeof(struct Tile_Coord_Node));
-    struct Tile_Coord_Node *current_node = NULL;
-    new_coords.head = current_node;
-    new_coords.length = 0;
+    
 
     //we want to find get tyles with nothing built on them and are buildable: river, flat, hill
     struct Tile_Coord_List control_list = mycity.tiles_under_controll;
@@ -876,7 +964,7 @@ void make_move(int player_id, struct PlayerData_List players, struct MapData *ma
         {
             //now we are concedering cities where there are things to do
             int min = 0;
-            int max = 2;
+            int max = 3;
             int choice = rand() % (max- min + 1) + min;  
             //printf("REEEE");
 
@@ -912,7 +1000,23 @@ void make_move(int player_id, struct PlayerData_List players, struct MapData *ma
                 }
                 city_move_attempt++;
             }
-            else if(choice == 2)//settler
+            else if(choice == 2)//campus
+            {
+                struct Tile_Coord_List possible_placement = get_available_coords(*map,mycity->data,campus);
+                if(possible_placement.length != 0)
+                {
+                    min = 0;
+                    max = possible_placement.length-1;
+                    int location_choice = rand() % (max- min + 1) + min;
+                    struct Tile_Coord cord_to_choose = get_ith_coord(possible_placement,location_choice);
+                    struct Buildable_Structure *building = create_build_structre(campus,mycity->data.built_structures.length, cord_to_choose);
+                    printf("Creating mine on tile %d %d, on city with city center: %d %d\n",cord_to_choose.x,cord_to_choose.y,mycity->data.city_center_coord.x,mycity->data.city_center_coord.y);
+                    mycity->data.current_structure_in_production = *building;
+                    free(building);
+                }
+                city_move_attempt++;
+            }
+            else if(choice == 3)//settler
             {   
                 //comment out used for debugging
                 //city_move_attempt++;
@@ -922,7 +1026,7 @@ void make_move(int player_id, struct PlayerData_List players, struct MapData *ma
 
                 //printf("SETTLER\n");
                 struct Tile_Coord_List possible_placement = get_available_coords(*map,mycity->data,city);
-                if(possible_placement.length != 0)
+                if(possible_placement.length != 0 && (mycity->data.population > 2))
                 {
                     min = 0;
                     max = possible_placement.length-1;
@@ -931,6 +1035,7 @@ void make_move(int player_id, struct PlayerData_List players, struct MapData *ma
                     struct Buildable_Structure *building = create_build_structre(city,mycity->data.built_structures.length, cord_to_choose);
                     printf("Creating city on tile %d %d, on city with city center: %d %d\n",cord_to_choose.x,cord_to_choose.y,mycity->data.city_center_coord.x,mycity->data.city_center_coord.y);
                     mycity->data.current_structure_in_production = *building;
+                    mycity->data.population -= 2;
                     free(building);
                 }
                 else
@@ -1032,7 +1137,7 @@ int main() {
         
     }
     //player spawning complete
-    int moves_into_future = 80;
+    int moves_into_future = 300;
     for(int i = 0; i < moves_into_future; i++)
     {
         make_all_moves(players_a, &map_a);
@@ -1041,6 +1146,11 @@ int main() {
         print_cities(players_a);
         //print_tiles_buildable(map_a);
         printf("Player %d has %d many cities\n",players_a.head->data.player_id,players_a.head->data.cities.length);
+        if(i % 10 == 0)
+        {
+            display_loop(&(players_a.head->data), &map_a, &players_a);
+        }
+        
         
     }
 
