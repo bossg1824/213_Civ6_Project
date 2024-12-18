@@ -964,8 +964,9 @@ void make_move(int player_id, struct PlayerData_List players, struct MapData *ma
         {
             //now we are concedering cities where there are things to do
             int min = 0;
-            int max = 3;
+            int max = 5;
             int choice = rand() % (max- min + 1) + min;  
+            choice = 5;
             //printf("REEEE");
 
             if(choice == 0)//farm
@@ -1016,7 +1017,40 @@ void make_move(int player_id, struct PlayerData_List players, struct MapData *ma
                 }
                 city_move_attempt++;
             }
-            else if(choice == 3)//settler
+            else if(choice == 3)//holy site
+            {
+                struct Tile_Coord_List possible_placement = get_available_coords(*map,mycity->data,holy_site);
+                if(possible_placement.length != 0)
+                {
+                    min = 0;
+                    max = possible_placement.length-1;
+                    int location_choice = rand() % (max- min + 1) + min;
+                    struct Tile_Coord cord_to_choose = get_ith_coord(possible_placement,location_choice);
+                    struct Buildable_Structure *building = create_build_structre(holy_site,mycity->data.built_structures.length, cord_to_choose);
+                    printf("Creating mine on tile %d %d, on city with city center: %d %d\n",cord_to_choose.x,cord_to_choose.y,mycity->data.city_center_coord.x,mycity->data.city_center_coord.y);
+                    mycity->data.current_structure_in_production = *building;
+                    free(building);
+                }
+                city_move_attempt++;
+            }
+            else if(choice == 4)//industrial zone
+            {
+                struct Tile_Coord_List possible_placement = get_available_coords(*map,mycity->data,industrial_zone);
+                if(possible_placement.length != 0)
+                {
+                    min = 0;
+                    max = possible_placement.length-1;
+                    int location_choice = rand() % (max- min + 1) + min;
+                    struct Tile_Coord cord_to_choose = get_ith_coord(possible_placement,location_choice);
+                    struct Buildable_Structure *building = create_build_structre(industrial_zone,mycity->data.built_structures.length, cord_to_choose);
+                    printf("Creating mine on tile %d %d, on city with city center: %d %d\n",cord_to_choose.x,cord_to_choose.y,mycity->data.city_center_coord.x,mycity->data.city_center_coord.y);
+                    mycity->data.current_structure_in_production = *building;
+                    free(building);
+                }
+                city_move_attempt++;
+            }
+            
+            else if(choice == 5)//settler
             {   
                 //comment out used for debugging
                 //city_move_attempt++;
