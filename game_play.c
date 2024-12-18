@@ -966,7 +966,6 @@ void make_move(int player_id, struct PlayerData_List players, struct MapData *ma
             int min = 0;
             int max = 5;
             int choice = rand() % (max- min + 1) + min;  
-            choice = 5;
             //printf("REEEE");
 
             if(choice == 0)//farm
@@ -1099,6 +1098,49 @@ void make_all_moves(struct PlayerData_List players, struct MapData *map)
 }
 
 
+int get_num_district(struct City_List cities, enum DistrictType type)
+{
+    struct City_Node *citynode =  cities.head ;
+    int sum = 0;
+    while(citynode != NULL)
+    {
+        struct  Buildable_Structure_Node *building =  citynode->data.built_structures.head;
+        while(building != NULL)
+        {
+            if(building->data.district.district_type == type)
+            {
+                sum++;
+            }
+            building = building->next;
+        }
+        citynode = citynode->next;
+    }
+    return sum;
+}
+
+
+
+
+
+int win_condition_naive(struct PlayerData_List players, struct MapData *map)
+{
+    struct PlayerData_Node *playernode = players.head;
+    int threshold = 6;
+    while(playernode != NULL)
+    {
+        struct City_List cities = playernode->data.cities;
+        int quantity = get_num_district(cities, campus);
+        if(quantity >= threshold)
+        {
+            return playernode->data.player_id;
+        }
+
+        playernode = playernode->next;
+    }
+    return default_int;
+}
+
+
 
 int main() {
     //initialize map and players
@@ -1171,10 +1213,18 @@ int main() {
         
     }
     //player spawning complete
-    int moves_into_future = 300;
+    int moves_into_future = 1000;
     for(int i = 0; i < moves_into_future; i++)
     {
         make_all_moves(players_a, &map_a);
+        int winner = win_condition_naive(players_a,&map_a);
+        if(winner != default_int)
+        {
+            printf("Player with ID %d won the game!!!",winner);
+            break;
+        }
+
+
         harvest_food_production(&map_a,players_a);
         printf("MOVE %d\n",i);
         print_cities(players_a);
