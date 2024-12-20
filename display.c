@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string.h>
 #include <ncurses.h>
 #include "civ.h"
@@ -178,7 +180,7 @@ void draw_tech(WINDOW* tech_display, struct TechTree* tech){
             wattron(tech_display, COLOR_PAIR(COMPLETED_RESEARCH));
         }
         //if the tech is the currently researching one
-        if(i == tech->current_rocketry_tech_node){
+        if(i == tech->current_uranium_tech_node){
             wattron(tech_display, COLOR_PAIR(CURRENT_RESEARCH));
         }
 
@@ -217,17 +219,6 @@ void draw_resources(WINDOW* resource_display, struct PlayerData* player){
     wattron(resource_display, COLOR_PAIR(SCIENCE_DISPLAY));
     mvwprintw(resource_display, 1, resource_display->_maxx - 18, "Science: %d/turn", player->science_per_turn);
     wattroff(resource_display, COLOR_PAIR(SCIENCE_DISPLAY));
-}
-
-int pos_in_list(struct PlayerData_List * list, int player_id){
-    struct PlayerData_Node * cur = list->head;
-    for(int i = 0; i < list->length && cur != NULL; i++){
-        if(cur->data.player_id == player_id){
-            return i + 1;
-        }
-        cur = cur->next;
-    }
-    return -1;
 }
 
 int player_color_num(struct PlayerData_List * players, int player_id){
@@ -366,21 +357,6 @@ char district_char(struct TileData * tile){
         default:
             return default_int;
     }
-}
-
-struct City * find_city(int city_id, struct PlayerData_List * players){
-    struct PlayerData_Node * cur_player = players->head;
-    while(cur_player != NULL){
-        struct City_Node * cur_city = cur_player->data.cities.head;
-        while(cur_city != NULL){
-            if(cur_city->data.city_id == city_id){
-                return &(cur_city->data);
-            }
-            cur_city = cur_city->next;
-        }
-        cur_player = cur_player->next;
-    }
-    return NULL;
 }
 
 void draw_edge(WINDOW* map_display, int win_block_row, int win_block_col, struct MapData*map, int map_row, int map_col, struct PlayerData_List* players, bool horizontal){
@@ -573,7 +549,7 @@ void draw_tile(WINDOW* map_display, int win_block_row, int win_block_col, struct
 
     if(dist_char == '^'){
         wattron(map_display, COLOR_PAIR(PRODUCTION_DISPLAY));
-        struct City * pop_target = find_city(map->tiles[map_row][map_col].city_id_controlling, players);
+        struct City * pop_target = find_city_in_all(players, map->tiles[map_row][map_col].city_id_controlling);
         int population = 0;
         if(pop_target != NULL){
             population = pop_target->population;
@@ -653,10 +629,11 @@ void update_all(struct Windows* displays, struct PlayerData* player, struct MapD
     wrefresh(displays->main_display);
 }
 
-int display_loop(struct PlayerData * player, struct MapData* map, struct PlayerData_List * players){
-
+struct Tile_Coord coord_display_loop(struct Tile_Coord coords, struct PlayerData * player, struct MapData* map, struct PlayerData_List * players){
     struct Windows* displays = malloc(sizeof(struct Windows));
     setup_windows(displays);
+    displays->leftmost_column = coords.x;
+    displays->top_row = coords.y;
     update_all(displays, player, map, players);
    
    int topmost;
@@ -742,9 +719,19 @@ int display_loop(struct PlayerData * player, struct MapData* map, struct PlayerD
     update_all(displays, player, map, players);
    }
    
+    struct Tile_Coord returning;
+    returning.x = displays->leftmost_column;
+    returning.y = displays->top_row;
 
     destroy_windows(displays);
     free(displays);
     endwin();
-    return 1;
+    return returning;
+}
+
+struct Tile_Coord display_loop(struct PlayerData * player, struct MapData* map, struct PlayerData_List * players){
+    struct Tile_Coord zeros;
+    zeros.x = 0;
+    zeros.y = 0;
+    return coord_display_loop(zeros, player, map, players);
 }

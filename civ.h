@@ -9,11 +9,13 @@
 #include <stdint.h>
 #include <string.h> 
 
-#define tile_cols 30
-#define tile_rows 30
+#define tile_cols 60
+#define tile_rows 60
 #define sub_tech_tree_size 5
 #define num_players 4
 #define map_seed 147
+
+//note to self: touch this and lose a finger
 #define default_int -1
 
 //Enums needed for Map Data
@@ -200,7 +202,7 @@ size_t size_of_civ_state(const struct GameState * civ_state){
     //for each tile
     for(int i = 0; i < civ_state->mymap.rows; i++){
         for(int j = 0; j < civ_state->mymap.cols; j++){
-            struct TileData* cur = &(civ_state->mymap.tiles[i][j]);
+            const struct TileData* cur = &(civ_state->mymap.tiles[i][j]);
             //if there exists a buldable structure
             if(cur->buildable_structure != NULL){
                 //add the size of a buildable structure
@@ -295,7 +297,7 @@ uint8_t * game_state_to_byte_array(const struct GameState * civ_state){
 
     for(int i = 0; i < civ_state->mymap.rows; i++){
         for(int j = 0; j < civ_state->mymap.cols; j++){
-            struct TileData* cur = &(civ_state->mymap.tiles[i][j]);
+            const struct TileData* cur = &(civ_state->mymap.tiles[i][j]);
             //if there exists a buldable structure
             if(cur->buildable_structure != NULL){
                 //copy the data into the byte array
@@ -411,7 +413,8 @@ void print_game_state(struct GameState * game){
     struct PlayerData_Node * player_travel = game->players.head;
     while(player_travel != NULL){
         struct PlayerData data = player_travel->data;
-        printf("Player Name : %s, fpt %d, pid %d, ppt %d, spt %d, tf %d\n", data.civ_name, data.faith_per_turn, data.player_id, data.production_per_turn, data.science_per_turn, data.total_faith);
+        printf("Player Name : %s, fpt %d, pid %d, ppt %d, spt %d, tf %d\n", data.civ_name, 
+                data.faith_per_turn, data.player_id, data.production_per_turn, data.science_per_turn, data.total_faith);
         printf("Num Cities: %d\n", data.cities.length);
 
         struct City_Node * city_travel = data.cities.head;
@@ -487,7 +490,7 @@ struct GameState * byte_array_to_game_state(uint8_t * byte_array, size_t size){
             } else {
                 is_head_of_list = false;
             }
-            int civ_name_length = (strlen((byte_array + pos)) + 1) * sizeof(char);
+            int civ_name_length = (strlen((char *)(byte_array + pos)) + 1) * sizeof(char);
             char * civ_name = calloc(1, civ_name_length);
             travel->data.civ_name = civ_name;
 
@@ -502,14 +505,14 @@ struct GameState * byte_array_to_game_state(uint8_t * byte_array, size_t size){
                 pos += sizeof(struct TechTree);
 
                 for(int i = 0; i < sub_tech_tree_size; i++){
-                    char * rocket_tech_name = calloc(1, (strlen(byte_array + pos) + 1) * sizeof(char));
-                    memcpy(rocket_tech_name, byte_array + pos, (strlen(byte_array + pos) + 1) * sizeof(char));
-                    pos += (strlen(byte_array + pos) + 1) * sizeof(char);
+                    char * rocket_tech_name = calloc(1, (strlen((char *)(byte_array + pos)) + 1) * sizeof(char));
+                    memcpy(rocket_tech_name, byte_array + pos, (strlen((char *)(byte_array + pos)) + 1) * sizeof(char));
+                    pos += (strlen((char *)(byte_array + pos)) + 1) * sizeof(char);
                     tech->rocketry_nodes[i].tech_bonus_name = rocket_tech_name;
 
-                    char * uranium_tech_name = calloc(1, (strlen(byte_array + pos) + 1) * sizeof(char));
-                    memcpy(uranium_tech_name, byte_array + pos, (strlen(byte_array + pos) + 1) * sizeof(char));
-                    pos += (strlen(byte_array + pos) + 1)* sizeof(char);
+                    char * uranium_tech_name = calloc(1, (strlen((char *)(byte_array + pos)) + 1) * sizeof(char));
+                    memcpy(uranium_tech_name, byte_array + pos, (strlen((char *) (byte_array + pos)) + 1) * sizeof(char));
+                    pos += (strlen((char *)(byte_array + pos)) + 1)* sizeof(char);
                     tech->uranium_nodes[i].tech_bonus_name = uranium_tech_name;
                 }
             }
@@ -538,9 +541,9 @@ struct GameState * byte_array_to_game_state(uint8_t * byte_array, size_t size){
                         is_head_of_city_list = false;
                     }
 
-                    char * city_name = calloc(1, (strlen(byte_array + pos) + 1) * sizeof(char));
-                    memcpy(city_name, byte_array + pos, (strlen(byte_array + pos) + 1) * sizeof(char));
-                    pos += (strlen(byte_array + pos) + 1) * sizeof(char);
+                    char * city_name = calloc(1, (strlen((char *)(byte_array + pos)) + 1) * sizeof(char));
+                    memcpy(city_name, byte_array + pos, (strlen((char *)(byte_array + pos)) + 1) * sizeof(char));
+                    pos += (strlen((char *)(byte_array + pos)) + 1) * sizeof(char);
 
                     city_travel->data.city_name = city_name;
 
@@ -633,8 +636,57 @@ struct GameState * byte_array_to_game_state(uint8_t * byte_array, size_t size){
         }
         
     }
-    printf("expected: %lu, actual: %lu\n", size, pos);
     return game;
 }
 
-#endif;
+int pos_in_list(struct PlayerData_List * list, int player_id){
+    struct PlayerData_Node * cur = list->head;
+    for(int i = 0; i < list->length && cur != NULL; i++){
+        if(cur->data.player_id == player_id){
+            return i + 1;
+        }
+        cur = cur->next;
+    }
+    return default_int;
+}
+
+int player_id_from_pos(struct PlayerData_List * list, int pos_in_list){
+    if(pos_in_list < 0 || pos_in_list >= list->length){
+        return default_int;
+    }
+
+    int travel_pos = 0;
+    struct PlayerData_Node * traverse = list->head;
+    while(traverse != NULL){
+        if(travel_pos == pos_in_list){
+            return traverse->data.player_id;
+        }
+        traverse = traverse->next;
+    }
+
+    return default_int;
+}
+
+struct City* find_city(struct City_List * list, int city_id){
+    struct City_Node * list_traverse = list->head;
+    while(list_traverse != NULL){
+        if(list_traverse->data.city_id == city_id){
+            return &(list_traverse->data);
+        }
+        list_traverse = list_traverse->next;
+    }
+    return NULL;
+}
+
+struct City* find_city_in_all(struct PlayerData_List * list, int city_id){
+    struct PlayerData_Node * list_traverse = list->head;
+    while(list_traverse != NULL){
+        struct City* finding = find_city(&(list_traverse->data.cities), city_id);
+        if(finding != NULL){
+            return finding;
+        }
+        list_traverse = list_traverse->next;
+    }
+    return NULL;
+}
+#endif

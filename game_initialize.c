@@ -165,7 +165,7 @@ struct MapData create_testmap1()
             coord.y = j;
             enum TileType tile_type = mountain;
             enum ResourceType resource = none;
-            int civ_id_controlling = default_int;
+            //int civ_id_controlling = default_int;
             int production = 1;
             int food = 2;
             struct Buildable_Structure *buildable = NULL;
@@ -207,8 +207,8 @@ void rotate_90(int matrix[tile_rows][tile_cols]) {
 struct OffSetLists generate_offsets(int starting_direction, int tile_row, int tile_col)
 {   
     int rand_val;
-    int xoff;
-    int yoff;
+    int xoff = 0;
+    int yoff = 0;
     int direction = starting_direction;
     int quadrant = direction/4;
     int angle_change = direction%4;
@@ -409,7 +409,7 @@ struct MapData map_initialize_default()
             }
 
             //initialize production values
-            int production;
+            int production = 0;
             if((tile_type == ocean)|| (tile_type == mountain) || (tile_type == lake))
             {
                 production = 0;
@@ -428,7 +428,7 @@ struct MapData map_initialize_default()
             }
 
             //itializing food
-            int food;
+            int food = 0;
             if(tile_type == mountain)
             {
                 food = 0;
@@ -495,8 +495,8 @@ struct MapData map_initialize_default()
                 {
                     //start generating path
 
-                    int x_offsets [river_length];
-                    int y_offsets [river_length];
+                    //int x_offsets [river_length];
+                    //int y_offsets [river_length];
 
                     //try to generate river
                     int min = 0;
@@ -698,7 +698,9 @@ struct MapData map_initialize_default()
 
 struct MapData map_initialize_current()
 {   
-    struct MapData mymap = map_initialize_default();
+    struct MapData * mymap = calloc(1, sizeof(struct MapData));
+    struct MapData check = map_initialize_default();
+    memcpy(mymap, &check, sizeof(struct MapData));
     //check to see if the random generation caused a surface with too many mountains or hills
     //otherwise generate map again
     float mountain_ratio = 0;
@@ -711,7 +713,7 @@ struct MapData map_initialize_current()
     //compute sums
     for (int i = 0; i <tile_rows; i++) {
         for (int j = 0; j < tile_cols; j++) {
-            enum TileType tile = mymap.tiles[i][j].tiletype;
+            enum TileType tile = mymap->tiles[i][j].tiletype;
             if(tile == mountain)
             {
                 mountain_ratio++;
@@ -726,11 +728,11 @@ struct MapData map_initialize_current()
     mountain_ratio/= (tile_cols * tile_rows);
     hill_ratio/= (tile_cols * tile_rows);
 
-    printf("%f %f", mountain_ratio, hill_ratio);
-
+    //printf("%f %f", mountain_ratio, hill_ratio);
     while(mountain_ratio > 0.1)
     {   
-        struct MapData mymap = map_initialize_default();
+        check = map_initialize_default();
+        memcpy(mymap, &check, sizeof(struct MapData));
         //check to see if the random generation caused a surface with too many mountains or hills
         //otherwise generate map again
 
@@ -741,7 +743,7 @@ struct MapData map_initialize_current()
         //compute sums
         for (int i = 0; i <tile_rows; i++) {
             for (int j = 0; j < tile_cols; j++) {
-                enum TileType tile = mymap.tiles[i][j].tiletype;
+                enum TileType tile = mymap->tiles[i][j].tiletype;
                 if(tile == mountain)
                 {
                     mountain_ratio++;
@@ -756,10 +758,10 @@ struct MapData map_initialize_current()
         mountain_ratio/= (tile_cols * tile_rows);
         hill_ratio/= (tile_cols * tile_rows);
 
-        printf("MOUNTAIN RATIO %f", mountain_ratio);
+        //printf("MOUNTAIN RATIO %f", mountain_ratio);
     }
-    printf("DONE");
-    return mymap;
+    //printf("DONE");
+    return *mymap;
 }
 
 
